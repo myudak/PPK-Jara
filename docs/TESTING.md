@@ -49,9 +49,10 @@ Run one backend test file with `php artisan test tests/Feature/Auth/Authenticati
 - [ ] Status changes among TODO, IN_PROGRESS, and COMPLETED.
 - [ ] Completing a task records completion time; reopening clears it.
 - [ ] List progress updates and handles a list with zero tasks.
-- [ ] An administrator can list, create, edit, and disable users.
-- [ ] A normal user cannot access administrator endpoints/pages.
-- [ ] A disabled user cannot start or continue a session.
+- [x] An administrator can list, create, edit, and disable users.
+- [x] A normal user cannot access administrator endpoints/pages.
+- [x] A disabled user cannot start or continue a session.
+- [ ] An administrator cannot disable or demote their own account via the admin page.
 - [ ] Loading, empty, validation, and server-error states are understandable.
 
 Items for unimplemented domain features remain expected failures in manual acceptance until their milestone lands; do not add placeholder automated tests that pretend endpoints exist.
