@@ -61,7 +61,11 @@ export function ListCreateForm({ onCreated }: ListCreateFormProps) {
                     {error}
                 </p>
             )}
-            <button type="submit" className="primary-button" disabled={isSubmitting || name.trim() === ''}>
+            <button
+                type="submit"
+                className="primary-button"
+                disabled={isSubmitting || name.trim() === ''}
+            >
                 {isSubmitting ? 'Creating…' : 'Create list'}
             </button>
         </form>
