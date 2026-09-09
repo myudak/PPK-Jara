@@ -467,6 +467,65 @@ input:focus {
     margin-top: 0;
 }
 
+.table-actions {
+    display: flex;
+    gap: 1rem;
+}
+.table-actions .text-button {
+    width: auto;
+    font-size: 0.72rem;
+}
+.table-actions .text-button:disabled {
+    color: var(--line);
+    cursor: not-allowed;
+    text-decoration: none;
+}
+
+select {
+    width: 100%;
+    padding: 0.75rem 0;
+    border: 0;
+    border-bottom: 1px solid var(--ink);
+    outline: none;
+    background: transparent;
+    font: inherit;
+}
+select:disabled {
+    color: var(--muted);
+    border-bottom-style: dashed;
+}
+
+.dialog-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: grid;
+    place-items: center;
+    padding: 1.5rem;
+    background: rgba(32, 33, 30, 0.55);
+    overflow-y: auto;
+}
+.dialog-card {
+    width: min(100%, 480px);
+    padding: 2rem;
+    border: 1px solid var(--ink);
+    background: var(--surface);
+    box-shadow: 10px 10px 0 var(--acid);
+}
+.dialog-header {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+.dialog-header h2 {
+    margin: 0.5rem 0 0;
+    font-size: clamp(1.8rem, 3vw, 2.4rem);
+}
+.dialog-card form {
+    margin-top: 1.5rem;
+}
+
 .route-state,
 .not-found {
     display: grid;
