@@ -52,4 +52,4 @@ MVP tidak mencakup registrasi publik, lupa password, notifikasi, komentar tugas,
 
 ## Catatan Implementasi Saat Ini
 
-Fondasi, autentikasi, skema database, policy, route frontend, seed data, dan quality tooling sudah tersedia. Endpoint list, membership, task, progress, dan admin-user masih berstatus planned; status endpoint aktual dicatat di [API.md](API.md).
+Fondasi, autentikasi, skema database, policy, route frontend, seed data, dan quality tooling sudah tersedia. Endpoint list, membership, dan UI kolaborasinya sudah diimplementasikan; task, progress, dan admin-user masih berstatus planned; status endpoint aktual dicatat di [API.md](API.md).
