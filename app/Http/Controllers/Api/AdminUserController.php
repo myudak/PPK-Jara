@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Support\ApiResponse;
@@ -26,5 +27,16 @@ class AdminUserController extends Controller
                 'total' => $users->total(),
             ],
         ]);
+    }
+
+    public function store(StoreUserRequest $request): JsonResponse
+    {
+        $user = User::query()->create($request->safe()->all());
+
+        return ApiResponse::success(
+            new UserResource($user->refresh()),
+            'User created successfully.',
+            201,
+        );
     }
 }
