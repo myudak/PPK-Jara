@@ -5,6 +5,7 @@ import { MemberPanel } from '@/features/lists/MemberPanel';
 import { deleteList, fetchList, fetchMembers, updateList } from '@/features/lists/api';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { useAuth } from '@/features/auth/AuthContext';
+import { TaskBoard } from '@/features/tasks/TaskBoard';
 import { getApiErrorMessage } from '@/lib/api';
 import type { ListMember, TaskList } from '@/types/domain';
 
@@ -192,7 +193,6 @@ export function ListDetailPage() {
                     </div>
                 )}
             </header>
-
             <section className="action-card" aria-label="List details">
                 {isEditing ? (
                     <form onSubmit={(event) => void handleSave(event)}>
@@ -237,6 +237,8 @@ export function ListDetailPage() {
                 isOwner={isOwner}
                 onChanged={() => void reloadList()}
             />
+
+            <TaskBoard listId={String(list.id)} />
 
             {!isOwner && (
                 <EmptyState
