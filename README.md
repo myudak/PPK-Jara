@@ -1,5 +1,8 @@
 # JARA
 
+![alt text](image.png)
+![alt text](image-1.png)
+![alt text](image-2.png)
 JARA is a Laravel and React web application for managing personal and collaborative task lists. This repository currently provides the production-oriented engineering foundation for a four-person team; it intentionally does not implement the complete product.
 
 ## What JARA will support
