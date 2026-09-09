@@ -46,7 +46,11 @@ export function MemberPanel({ listId, members, isOwner, onChanged }: MemberPanel
     return (
         <section className="action-card" aria-label="List members">
             <h2>Members</h2>
-            <p>{members.length === 0 ? 'No members yet. Share the list by adding collaborators.' : `${members.length} collaborator(s) on this list.`}</p>
+            <p>
+                {members.length === 0
+                    ? 'No members yet. Share the list by adding collaborators.'
+                    : `${members.length} collaborator(s) on this list.`}
+            </p>
 
             {members.length > 0 && (
                 <ul className="member-list">
@@ -54,10 +58,20 @@ export function MemberPanel({ listId, members, isOwner, onChanged }: MemberPanel
                         <li key={member.user_id} className="member-row">
                             <span>
                                 {member.user?.name ?? `User #${member.user_id}`}
-                                <small> · joined {member.joined_at ? new Date(member.joined_at).toLocaleDateString() : '—'}</small>
+                                <small>
+                                    {' '}
+                                    · joined{' '}
+                                    {member.joined_at
+                                        ? new Date(member.joined_at).toLocaleDateString()
+                                        : '—'}
+                                </small>
                             </span>
                             {isOwner && (
-                                <button type="button" className="danger-button" onClick={() => void handleRemove(member)}>
+                                <button
+                                    type="button"
+                                    className="danger-button"
+                                    onClick={() => void handleRemove(member)}
+                                >
                                     Remove
                                 </button>
                             )}

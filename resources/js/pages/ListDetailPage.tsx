@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { MemberPanel } from '@/features/lists/MemberPanel';
@@ -29,32 +29,39 @@ export function ListDetailPage() {
     const [saveError, setSaveError] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    const loadList = useCallback(async () => {
+    useEffect(() => {
         if (!isValidId) {
-            setError('This task list does not exist.');
-            setIsLoading(false);
             return;
         }
 
-        setIsLoading(true);
-        setError(null);
+        let isCurrent = true;
 
-        try {
-            const [listData, memberData] = await Promise.all([fetchList(listId), fetchMembers(listId)]);
-            setList(listData);
-            setMembers(memberData);
-            setName(listData.name);
-            setDescription(listData.description ?? '');
-        } catch (requestError: unknown) {
-            setError(getApiErrorMessage(requestError));
-        } finally {
-            setIsLoading(false);
-        }
+        Promise.all([fetchList(listId), fetchMembers(listId)])
+            .then(([listData, memberData]) => {
+                if (!isCurrent) {
+                    return;
+                }
+                setList(listData);
+                setMembers(memberData);
+                setName(listData.name);
+                setDescription(listData.description ?? '');
+                setError(null);
+            })
+            .catch((requestError: unknown) => {
+                if (isCurrent) {
+                    setError(getApiErrorMessage(requestError));
+                }
+            })
+            .finally(() => {
+                if (isCurrent) {
+                    setIsLoading(false);
+                }
+            });
+
+        return () => {
+            isCurrent = false;
+        };
     }, [isValidId, listId]);
-
-    useEffect(() => {
-        void loadList();
-    }, [loadList]);
 
     async function handleSave(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -79,6 +86,26 @@ export function ListDetailPage() {
         }
     }
 
+    async function reloadList() {
+        setIsLoading(true);
+
+        try {
+            const [listData, memberData] = await Promise.all([
+                fetchList(listId),
+                fetchMembers(listId),
+            ]);
+            setList(listData);
+            setMembers(memberData);
+            setName(listData.name);
+            setDescription(listData.description ?? '');
+            setError(null);
+        } catch (requestError: unknown) {
+            setError(getApiErrorMessage(requestError));
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
     async function handleDelete() {
         if (list === null) {
             return;
@@ -92,11 +119,27 @@ export function ListDetailPage() {
 
         try {
             await deleteList(list.id);
-            navigate('/dashboard');
+            void navigate('/dashboard');
         } catch (requestError: unknown) {
             setIsDeleting(false);
             setSaveError(getApiErrorMessage(requestError));
         }
+    }
+
+    const invalidMessage = isValidId ? null : 'This task list does not exist.';
+
+    if (invalidMessage !== null) {
+        return (
+            <div className="page-stack">
+                <div role="alert" className="action-card">
+                    <h2>List unavailable.</h2>
+                    <p>{invalidMessage}</p>
+                    <Link to="/dashboard" className="primary-button">
+                        Back to dashboard
+                    </Link>
+                </div>
+            </div>
+        );
     }
 
     if (isLoading) {
@@ -132,10 +175,19 @@ export function ListDetailPage() {
                 </div>
                 {isOwner && (
                     <div className="header-actions">
-                        <button type="button" className="primary-button" onClick={() => setIsEditing((current) => !current)}>
+                        <button
+                            type="button"
+                            className="primary-button"
+                            onClick={() => setIsEditing((current) => !current)}
+                        >
                             {isEditing ? 'Close editor' : 'Edit details'}
                         </button>
-                        <button type="button" className="danger-button" onClick={() => void handleDelete()} disabled={isDeleting}>
+                        <button
+                            type="button"
+                            className="danger-button"
+                            onClick={() => void handleDelete()}
+                            disabled={isDeleting}
+                        >
                             {isDeleting ? 'Deleting…' : 'Delete list'}
                         </button>
                     </div>
@@ -183,12 +235,18 @@ export function ListDetailPage() {
                 listId={list.id}
                 members={members}
                 isOwner={isOwner}
-                onChanged={() => void loadList()}
+                onChanged={() => void reloadList()}
             />
 
             <TaskBoard listId={String(list.id)} />
 
-            {!isOwner && <EmptyState eyebrow="Read only" title="Only the owner can change this list." description="You can view the list and its members, and participate once tasks land here." />}
+            {!isOwner && (
+                <EmptyState
+                    eyebrow="Read only"
+                    title="Only the owner can change this list."
+                    description="You can view the list and its members, and participate once tasks land here."
+                />
+            )}
         </div>
     );
 }

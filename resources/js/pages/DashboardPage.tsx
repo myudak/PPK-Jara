@@ -21,6 +21,7 @@ export function DashboardPage() {
         try {
             const data = await fetchLists();
             setLists(data);
+            setError(null);
         } catch (requestError: unknown) {
             setError(getApiErrorMessage(requestError));
         } finally {
@@ -29,8 +30,29 @@ export function DashboardPage() {
     }, []);
 
     useEffect(() => {
-        void loadLists();
-    }, [loadLists]);
+        let isCurrent = true;
+
+        fetchLists()
+            .then((data) => {
+                if (isCurrent) {
+                    setLists(data);
+                }
+            })
+            .catch((requestError: unknown) => {
+                if (isCurrent) {
+                    setError(getApiErrorMessage(requestError));
+                }
+            })
+            .finally(() => {
+                if (isCurrent) {
+                    setIsLoading(false);
+                }
+            });
+
+        return () => {
+            isCurrent = false;
+        };
+    }, []);
 
     return (
         <div className="page-stack">
@@ -43,15 +65,20 @@ export function DashboardPage() {
 
             <ListCreateForm onCreated={(list) => setLists((current) => [list, ...current])} />
 
-            {isLoading && (
-                <div role="status" className="loader" aria-label="Loading task lists" />
-            )}
+            {isLoading && <div role="status" className="loader" aria-label="Loading task lists" />}
 
             {!isLoading && error && (
                 <div role="alert" className="action-card">
                     <h2>Something went wrong.</h2>
                     <p>{error}</p>
-                    <button type="button" className="primary-button" onClick={() => void loadLists()}>
+                    <button
+                        type="button"
+                        className="primary-button"
+                        onClick={() => {
+                            setIsLoading(true);
+                            void loadLists();
+                        }}
+                    >
                         Try again
                     </button>
                 </div>
