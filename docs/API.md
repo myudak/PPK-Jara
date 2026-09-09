@@ -98,15 +98,31 @@ Adding the owner as a pivot member and duplicate membership must be rejected. Re
 
 Priority accepts `LOW`, `MEDIUM`, or `HIGH` and defaults to `MEDIUM`. Assignment must be null, the list owner, or a current member. Setting status to `COMPLETED` sets `completed_at`; moving away from completion clears it. Date validation must reject a due date earlier than the start date.
 
-## Planned administrator endpoints
+## Implemented administrator endpoints
 
-| Method | Endpoint | Authorization | Expected input |
+| Method | Endpoint | Auth | Authorization |
 | --- | --- | --- | --- |
-| `GET` | `/api/admin/users` | Admin only | Filters/pagination to be specified with implementation |
-| `POST` | `/api/admin/users` | Admin only | Name, username, email, password, role, status |
-| `PATCH` | `/api/admin/users/{user}` | Admin only | Editable user fields including `status` |
+| `GET` | `/api/admin/users` | Required | Admin + active account |
+| `POST` | `/api/admin/users` | Required | Admin + active account |
+| `PATCH` | `/api/admin/users/{user}` | Required | Admin + active account |
 
 Account disabling is represented by `PATCH /api/admin/users/{user}` with `status: "DISABLED"`; no hard-delete endpoint is planned.
+
+`GET /api/admin/users?page=1` returns users ordered by name with pagination metadata:
+
+```json
+{
+    "success": true,
+    "data": {
+        "users": [{ "id": 2, "name": "JARA User One", "username": "user1", "email": "user1@example.com", "role": "USER", "status": "ACTIVE", "created_at": "2026-09-09T09:00:00.000000Z", "updated_at": "2026-09-09T09:00:00.000000Z" }],
+        "meta": { "current_page": 1, "last_page": 1, "per_page": 15, "total": 1 }
+    }
+}
+```
+
+`POST /api/admin/users` accepts `name`, `username` (unique, `alpha_dash`, min 3), `email` (unique), `password` (min 8, stored hashed), `role` (`USER` or `ADMIN`), and `status` (`ACTIVE` or `DISABLED`), and returns the created user with `201`. There is no public registration.
+
+`PATCH /api/admin/users/{user}` accepts any subset of the same fields and returns the updated user. An administrator cannot change their own `role` or `status`; attempts receive `422` with the message `You cannot change your own role or status.` Updating a missing user returns the shared `404` envelope. Disabling a user does not remove their owned lists, memberships, or assignments.
 
 ## Implementation rules
 
