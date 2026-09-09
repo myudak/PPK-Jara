@@ -86,17 +86,18 @@ Successful login and `/api/me` return the public user fields:
 
 Adding the owner as a pivot member and duplicate membership must be rejected. Removing a member must clear that user’s task assignments within the same list and transaction; the database cannot enforce this cross-table membership rule by itself.
 
-## Planned task endpoints
+## Implemented task endpoints
 
 | Method | Endpoint | Authorization | Expected input |
 | --- | --- | --- | --- |
-| `GET` | `/api/lists/{list}/tasks` | Owner or member | Filters/pagination to be specified with implementation |
+| `GET` | `/api/lists/{list}/tasks` | Owner or member | Optional `priority`, `status` filters; optional `sort` (`priority`, `due_date`) and `direction` (`asc`, `desc`) |
 | `POST` | `/api/lists/{list}/tasks` | Owner or member | `title`; optional description/priority/status/assignee/dates |
 | `GET` | `/api/tasks/{task}` | Participant in task’s list | None |
 | `PATCH` | `/api/tasks/{task}` | Participant in task’s list | Editable task fields |
 | `DELETE` | `/api/tasks/{task}` | Participant in task’s list | None |
+| `GET` | `/api/lists/{list}/progress` | Owner or member | None |
 
-Priority accepts `LOW`, `MEDIUM`, or `HIGH` and defaults to `MEDIUM`. Assignment must be null, the list owner, or a current member. Setting status to `COMPLETED` sets `completed_at`; moving away from completion clears it. Date validation must reject a due date earlier than the start date.
+Priority accepts `LOW`, `MEDIUM`, or `HIGH` and defaults to `MEDIUM`. Status accepts `TODO`, `IN_PROGRESS`, or `COMPLETED` and defaults to `TODO`. Assignment must be null, the list owner, or a current member. Setting status to `COMPLETED` sets `completed_at`; moving away from completion clears it. Date validation rejects a due date earlier than the start date. The progress endpoint returns `{ "total": int, "completed": int, "percent": int }` and reports `0` percent for lists without tasks.
 
 ## Implemented administrator endpoints
 

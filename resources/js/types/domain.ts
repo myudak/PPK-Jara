@@ -38,6 +38,7 @@ export interface Task {
     priority: TaskPriority;
     status: TaskStatus;
     assignee_id: number | null;
+    assignee?: User;
     start_date: string | null;
     due_date: string | null;
     completed_at: string | null;
