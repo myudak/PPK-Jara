@@ -1,16 +1,22 @@
 import { useCallback, useEffect, useState } from 'react';
+import { isAxiosError } from 'axios';
 
 import { EmptyState } from '@/components/shared/EmptyState';
-import { fetchAdminUsers } from '@/features/admin/api';
+import { fetchAdminUsers, updateAdminUser } from '@/features/admin/api';
 import type { AdminUserListData } from '@/features/admin/api';
+import { UserForm } from '@/features/admin/UserForm';
+import { useAuth } from '@/features/auth/AuthContext';
 import { getApiErrorMessage } from '@/lib/api';
 import type { User } from '@/types/domain';
 
 export function AdminUsersPage() {
+    const { user: currentUser } = useAuth();
     const [listData, setListData] = useState<AdminUserListData | null>(null);
     const [page, setPage] = useState(1);
     const [error, setError] = useState<string | null>(null);
     const [reloadToken, setReloadToken] = useState(0);
+    const [formUser, setFormUser] = useState<User | 'new' | null>(null);
+    const [rowError, setRowError] = useState<string | null>(null);
 
     useEffect(() => {
         let isCurrent = true;
@@ -42,6 +48,28 @@ export function AdminUsersPage() {
         setReloadToken((token) => token + 1);
     }, []);
 
+    const handleSaved = useCallback(() => {
+        setFormUser(null);
+        setReloadToken((token) => token + 1);
+    }, []);
+
+    const handleToggleStatus = useCallback(async (target: User) => {
+        setRowError(null);
+
+        const nextStatus = target.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE';
+
+        try {
+            await updateAdminUser(target.id, { status: nextStatus });
+            setReloadToken((token) => token + 1);
+        } catch (requestError: unknown) {
+            if (isAxiosError(requestError)) {
+                setRowError(getApiErrorMessage(requestError));
+            } else {
+                setRowError('An unexpected error occurred.');
+            }
+        }
+    }, []);
+
     const users = listData?.users ?? [];
     const meta = listData?.meta;
     const currentPage = meta?.current_page ?? page;
@@ -55,10 +83,16 @@ export function AdminUsersPage() {
                     <p className="eyebrow">Administration / Users</p>
                     <h1>User directory.</h1>
                 </div>
-                {meta !== undefined && !isLoading && (
-                    <span className="foundation-badge">{meta.total} users</span>
-                )}
+                <button type="button" className="primary-button" onClick={() => setFormUser('new')}>
+                    New user
+                </button>
             </header>
+
+            {rowError !== null && (
+                <p className="form-error" role="alert">
+                    {rowError}
+                </p>
+            )}
 
             {error !== null && (
                 <section className="empty-state" role="alert">
@@ -96,6 +130,7 @@ export function AdminUsersPage() {
                                 <th scope="col">Email</th>
                                 <th scope="col">Role</th>
                                 <th scope="col">Status</th>
+                                <th scope="col">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -117,6 +152,30 @@ export function AdminUsersPage() {
                                         >
                                             {user.status}
                                         </span>
+                                    </td>
+                                    <td>
+                                        <div className="table-actions">
+                                            <button
+                                                type="button"
+                                                className="text-button"
+                                                onClick={() => setFormUser(user)}
+                                            >
+                                                Edit
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="text-button"
+                                                disabled={currentUser?.id === user.id}
+                                                title={
+                                                    currentUser?.id === user.id
+                                                        ? 'You cannot change your own role or status.'
+                                                        : undefined
+                                                }
+                                                onClick={() => void handleToggleStatus(user)}
+                                            >
+                                                {user.status === 'ACTIVE' ? 'Disable' : 'Enable'}
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -145,6 +204,15 @@ export function AdminUsersPage() {
                         </button>
                     </nav>
                 </section>
+            )}
+
+            {formUser !== null && currentUser !== null && (
+                <UserForm
+                    user={formUser === 'new' ? null : formUser}
+                    currentUserId={currentUser.id}
+                    onClose={() => setFormUser(null)}
+                    onSaved={handleSaved}
+                />
             )}
         </div>
     );
