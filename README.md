@@ -160,7 +160,7 @@ Use Conventional Commits such as `feat(lists): add membership endpoint` or `fix(
 
 | Owner | Domains |
 | --- | --- |
-| Project Manager | Architecture, integration, review, merge, deployment, cross-module fixes, documentation |
+| Muchammad Yuda Tri Ananda sebagai Project Manager | Architecture, integration, review, merge, deployment, cross-module fixes, documentation |
 | Muhammad Zaidaan Ardiyansyah (24060124140200) | Authentication, users, administration |
 | Nayla Husna (24060124140158) | Task lists, membership, collaboration |
 | Muhammad Hafidh Zufar Dewantara (24060124140164) | Tasks, assignment, priority, progress |
