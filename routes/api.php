@@ -15,6 +15,8 @@ Route::middleware(['auth:sanctum', 'active'])->group(function (): void {
     Route::middleware('admin')->group(function (): void {
         Route::get('/admin/users', [AdminUserController::class, 'index'])
             ->name('api.admin.users.index');
+        Route::post('/admin/users', [AdminUserController::class, 'store'])
+            ->name('api.admin.users.store');
     });
 
     // TODO(programmer-2): Implement list and membership endpoints with TaskListPolicy.
