@@ -95,8 +95,11 @@ Implemented endpoints:
 | `POST` | `/api/login` | Start a session using email and password |
 | `POST` | `/api/logout` | End the authenticated session |
 | `GET` | `/api/me` | Return the authenticated user |
+| `GET`/`POST` | `/api/lists` | List accessible lists; create a list |
+| `GET`/`PATCH`/`DELETE` | `/api/lists/{list}` | List detail; owner-only edit and delete |
+| `GET`/`POST`/`DELETE` | `/api/lists/{list}/members` | Membership management |
 
-All list, membership, task, and admin-user endpoints are documented contracts but are intentionally not implemented yet. See [API documentation](docs/API.md).
+Task and admin-user endpoints are documented contracts but are intentionally not implemented yet. See [API documentation](docs/API.md).
 
 ## Quality checks
 

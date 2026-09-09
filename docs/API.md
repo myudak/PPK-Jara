@@ -1,6 +1,6 @@
 # API Contract
 
-All endpoints are rooted at `/api`, accept and return JSON, and use session authentication unless marked public. Planned endpoints are contracts for future implementation—not live routes.
+All endpoints are rooted at `/api`, accept and return JSON, and use session authentication unless marked public. Task and administrator endpoints remain planned contracts for future implementation.
 
 ## Response envelopes
 
@@ -66,25 +66,25 @@ Successful login and `/api/me` return the public user fields:
 }
 ```
 
-## Planned list endpoints
+## Implemented list endpoints
 
-| Method | Endpoint | Authorization | Expected input |
+| Method | Endpoint | Auth | Authorization |
 | --- | --- | --- | --- |
-| `GET` | `/api/lists` | Owned/member lists only | Filters/pagination to be specified with implementation |
-| `POST` | `/api/lists` | Active user | `name`, optional `description` |
-| `GET` | `/api/lists/{list}` | Owner or member | None |
-| `PATCH` | `/api/lists/{list}` | Owner only | Optional `name`, `description` |
-| `DELETE` | `/api/lists/{list}` | Owner only | None |
+| `GET` | `/api/lists` | Required | Active account; returns owned and joined lists only |
+| `POST` | `/api/lists` | Required | Active account; `name` required, optional `description` |
+| `GET` | `/api/lists/{list}` | Required | Owner or member |
+| `PATCH` | `/api/lists/{list}` | Required | Owner only |
+| `DELETE` | `/api/lists/{list}` | Required | Owner only; cascades membership and tasks |
 
-## Planned membership endpoints
+## Implemented membership endpoints
 
-| Method | Endpoint | Authorization | Expected input |
+| Method | Endpoint | Auth | Authorization |
 | --- | --- | --- | --- |
-| `GET` | `/api/lists/{list}/members` | Owner or member | None |
-| `POST` | `/api/lists/{list}/members` | Owner only | `user_id` |
-| `DELETE` | `/api/lists/{list}/members/{user}` | Owner only | None |
+| `GET` | `/api/lists/{list}/members` | Required | Owner or member |
+| `POST` | `/api/lists/{list}/members` | Required | Owner only; `user_id` |
+| `DELETE` | `/api/lists/{list}/members/{member}` | Required | Owner only |
 
-Adding the owner as a pivot member and duplicate membership must be rejected. Removing a member must clear that user’s task assignments within the same list and transaction; the database cannot enforce this cross-table membership rule by itself.
+Adding the owner as a pivot member and duplicate membership are rejected with `422`. Removing a member clears that user's task assignments within the same list in a transaction.
 
 ## Implemented task endpoints
 
