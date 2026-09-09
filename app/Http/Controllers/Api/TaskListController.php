@@ -38,9 +38,11 @@ class TaskListController extends Controller
 
     public function store(StoreListRequest $request): JsonResponse
     {
+        $data = $request->validated();
+
         $list = TaskList::query()->create([
-            'name' => $request->safe()->string('name'),
-            'description' => $request->safe()->nullIfAbsent('description') ?? $request->safe()->input('description'),
+            'name' => $data['name'],
+            'description' => $data['description'] ?? null,
             'owner_id' => $request->user()->id,
         ]);
 
