@@ -37,7 +37,10 @@ export async function createAdminUser(payload: AdminUserPayload): Promise<User> 
     return response.data.data;
 }
 
-export async function updateAdminUser(id: number, payload: Partial<AdminUserPayload>): Promise<User> {
+export async function updateAdminUser(
+    id: number,
+    payload: Partial<AdminUserPayload>,
+): Promise<User> {
     const response = await api.patch<ApiSuccess<User>>(`/api/admin/users/${id}`, payload);
 
     return response.data.data;
