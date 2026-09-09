@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\TaskController;
+use App\Http\Controllers\Api\TaskListProgressController;
 use App\Http\Controllers\Api\TaskListTaskController;
 use Illuminate\Support\Facades\Route;
 
@@ -24,4 +25,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function (): void {
     Route::get('/tasks/{task}', [TaskController::class, 'show'])->name('api.tasks.show');
     Route::patch('/tasks/{task}', [TaskController::class, 'update'])->name('api.tasks.update');
     Route::delete('/tasks/{task}', [TaskController::class, 'destroy'])->name('api.tasks.destroy');
+
+    Route::get('/lists/{list}/progress', TaskListProgressController::class)
+        ->name('api.lists.progress');
 });
