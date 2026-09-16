@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
@@ -9,6 +10,7 @@ use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class AdminUserController extends Controller
 {
@@ -59,6 +61,20 @@ class AdminUserController extends Controller
         return ApiResponse::success(
             new UserResource($user->refresh()),
             'User updated successfully.',
+        );
+    }
+
+    public function destroy(Request $request, User $user): JsonResponse
+    {
+        if ($request->user()?->is($user)) {
+            return ApiResponse::error('You cannot delete your own account.', 422);
+        }
+
+        $user->forceFill(['status' => UserStatus::Disabled])->save();
+
+        return ApiResponse::success(
+            new UserResource($user->refresh()),
+            'User account deleted successfully.',
         );
     }
 }

@@ -2,25 +2,25 @@
 
 ## Responsibilities
 
-### Project Manager
+### Nayla Husna — 24060124140158 (Project Manager)
 
 Owns the SRS, architecture, initial scaffold, backlog, milestone planning, integration, Pull Request review, merging, cross-module bugs, final QA, deployment, and documentation consistency.
 
 ### Muhammad Zaidaan Ardiyansyah — 24060124140200
 
-**Fitur/SRS:** Authentication, Users, Admin, API, dan Access Control — SRS-002 sampai SRS-005 serta SRS-019 sampai SRS-023.
+**Fitur/SRS:** Frontend, Authentication, Users, dan Admin — SRS-002 sampai SRS-005, SRS-019 sampai SRS-021, SRS-024, SRS-026, SRS-028, serta SRS-031 sampai SRS-032.
 
-Menangani login, logout, session pengguna, pembatasan akun nonaktif, daftar pengguna, pembuatan dan perubahan akun, role/status, endpoint administrator, UI, serta pengujiannya.
+Menangani seluruh frontend React, shadcn design system, landing page, login/logout/session, pengelolaan akun administrator, logical account deletion, integrasi API, serta pengujiannya.
 
-### Nayla Husna — 24060124140158
+### Muchammad Yuda
 
-**Fitur/SRS:** Foundation, Task Lists, Membership, Collaboration, UI, dan Project Standards — SRS-001, SRS-006 sampai SRS-010, serta SRS-024 sampai SRS-025.
+**Fitur/SRS:** Task Lists, Membership, Security, dan Atomic Operations — SRS-006 sampai SRS-010 serta SRS-022, SRS-023, SRS-029, dan SRS-030.
 
-Menangani CRUD daftar/list/project, pembatasan daftar yang dapat dilihat, pengelolaan anggota, aksi khusus pemilik, UI kolaborasi daftar, serta pengujiannya.
+Menangani backend CRUD daftar/list/project, query scoping, membership, transaksi atomic, validasi dan keamanan query, serta pengujiannya.
 
 ### Muhammad Hafidh Zufar Dewantara — 24060124140164
 
-**Fitur/SRS:** Tasks, Assignment, Priority, dan Progress — SRS-011 sampai SRS-018.
+**Fitur/SRS:** Tasks, Assignment, Priority, dan Progress — SRS-011 sampai SRS-018 serta SRS-027.
 
 Menangani CRUD tugas, validasi assignee, prioritas, tenggat waktu, status dan penyelesaian tugas, perhitungan progres, UI tugas, serta pengujiannya.
 

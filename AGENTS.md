@@ -30,10 +30,10 @@ JARA is a Laravel + React collaborative task-management application. This is a m
 
 | Owner | Responsibilities |
 | --- | --- |
-| Muhammad Zaidaan Ardiyansyah (24060124140200) | Authentication, users, administration |
-| Nayla Husna (24060124140158) | Task lists, membership, collaboration |
+| Muhammad Zaidaan Ardiyansyah (24060124140200) | Frontend React, authentication, users, administration |
+| Muchammad Yuda | Task lists, membership, security, atomic operations |
 | Muhammad Hafidh Zufar Dewantara (24060124140164) | Tasks, assignment, priority, progress |
-| Project Manager | Architecture, scaffolding, integration, PR review, merge, deployment, cross-module fixes, documentation |
+| Nayla Husna (Project Manager) | Architecture, integration, PR review, merge, deployment, cross-module fixes, documentation |
 
 Domain ownership does not allow a developer to break a shared contract without discussion. Cross-domain work should identify affected owners in the Pull Request.
 
@@ -58,7 +58,7 @@ Changing a shared contract requires updating affected backend and frontend code,
 - Validate substantial requests with Form Requests.
 - Authorize list/task resources with Policies and admin areas with the admin middleware.
 - Scope list queries to owned or joined lists; a policy check does not replace query scoping.
-- Validate that a task assignee is the list owner or a current member.
+- Validate that every task assignee is the list owner or a current member.
 - Use enums from `app/Enums` rather than raw status strings.
 - Use API Resources for stable public shapes.
 - Prefer disabling users. Hard deletion must preserve ownership/history and be explicitly designed.

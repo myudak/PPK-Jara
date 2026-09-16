@@ -72,7 +72,7 @@ class AdminUserUpdateTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.status', 'DISABLED');
 
-        $this->actingAs($target)
+        $this->actingAs($target->refresh())
             ->getJson('/api/me')
             ->assertForbidden()
             ->assertJsonPath('success', false);

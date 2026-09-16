@@ -19,6 +19,8 @@ Route::middleware(['auth:sanctum', 'active'])->group(function (): void {
             ->name('api.admin.users.store');
         Route::patch('/admin/users/{user}', [AdminUserController::class, 'update'])
             ->name('api.admin.users.update');
+        Route::delete('/admin/users/{user}', [AdminUserController::class, 'destroy'])
+            ->name('api.admin.users.destroy');
     });
 
     // TODO(programmer-2): Implement list and membership endpoints with TaskListPolicy.

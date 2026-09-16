@@ -95,8 +95,9 @@ Implemented endpoints:
 | `POST` | `/api/login` | Start a session using email and password |
 | `POST` | `/api/logout` | End the authenticated session |
 | `GET` | `/api/me` | Return the authenticated user |
+| `GET/POST/PATCH/DELETE` | `/api/admin/users...` | Manage users and account access |
 
-All list, membership, task, and admin-user endpoints are documented contracts but are intentionally not implemented yet. See [API documentation](docs/API.md).
+List, membership, and task endpoints remain planned contracts. Their React screens are API-ready and show explicit error states until the backend modules land. See [API documentation](docs/API.md).
 
 ## Quality checks
 
@@ -157,22 +158,22 @@ Use Conventional Commits such as `feat(lists): add membership endpoint` or `fix(
 
 | Owner | Domains |
 | --- | --- |
-| Project Manager | Architecture, integration, review, merge, deployment, cross-module fixes, documentation |
-| Muhammad Zaidaan Ardiyansyah (24060124140200) | Authentication, users, administration |
-| Nayla Husna (24060124140158) | Task lists, membership, collaboration |
+| Nayla Husna (24060124140158), Project Manager | Architecture, integration, review, merge, deployment, documentation |
+| Muhammad Zaidaan Ardiyansyah (24060124140200) | Frontend React, design system, authentication, users, administration |
+| Muchammad Yuda | Task lists, membership, security, atomic operations |
 | Muhammad Hafidh Zufar Dewantara (24060124140164) | Tasks, assignment, priority, progress |
 
 Ownership clarifies responsibility; it does not permit unilateral changes to shared API, identity, status, or endpoint contracts.
 
 ## Current foundation and next work
 
-The repository includes authentication, schema, relationships, policies, seed data, consistent API envelopes, protected frontend routing, placeholder pages, and testing/linting configuration.
+The repository includes authentication, admin user management, logical account deletion, a public landing page, shadcn-based React screens, schema, policies, seed data, API envelopes, and quality tooling.
 
 Recommended first tasks:
 
-1. Zaidaan: implement administrator user listing, creation, editing, and disabling behind the admin middleware.
-2. Nayla: implement authorized task-list CRUD and membership management with query scoping.
-3. Hafidh: implement task CRUD, priority, assignment validation, status transitions, and progress calculation.
+1. Yuda: implement authorized task-list CRUD, membership management, transactions, and query scoping.
+2. Hafidh: implement task CRUD, multiple assignment, priority, status transitions, and progress.
+3. Zaidaan: integrate delivered endpoints into the existing frontend contracts and complete acceptance testing.
 
 ## Documentation
 

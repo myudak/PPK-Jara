@@ -91,12 +91,12 @@ Adding the owner as a pivot member and duplicate membership must be rejected. Re
 | Method | Endpoint | Authorization | Expected input |
 | --- | --- | --- | --- |
 | `GET` | `/api/lists/{list}/tasks` | Owner or member | Filters/pagination to be specified with implementation |
-| `POST` | `/api/lists/{list}/tasks` | Owner or member | `title`; optional description/priority/status/assignee/dates |
+| `POST` | `/api/lists/{list}/tasks` | Owner or member | `title`; optional description/priority/status/`assignee_ids`/dates |
 | `GET` | `/api/tasks/{task}` | Participant in task’s list | None |
 | `PATCH` | `/api/tasks/{task}` | Participant in task’s list | Editable task fields |
 | `DELETE` | `/api/tasks/{task}` | Participant in task’s list | None |
 
-Priority accepts `LOW`, `MEDIUM`, or `HIGH` and defaults to `MEDIUM`. Assignment must be null, the list owner, or a current member. Setting status to `COMPLETED` sets `completed_at`; moving away from completion clears it. Date validation must reject a due date earlier than the start date.
+Priority accepts `LOW`, `MEDIUM`, or `HIGH` and defaults to `MEDIUM`. `assignee_ids` is an array of unique user IDs; every assignee must be the list owner or a current member. Task responses return an `assignees` collection. Setting status to `COMPLETED` sets `completed_at`; moving away from completion clears it. Date validation must reject a due date earlier than the start date.
 
 ## Implemented administrator endpoints
 
@@ -105,8 +105,9 @@ Priority accepts `LOW`, `MEDIUM`, or `HIGH` and defaults to `MEDIUM`. Assignment
 | `GET` | `/api/admin/users` | Required | Admin + active account |
 | `POST` | `/api/admin/users` | Required | Admin + active account |
 | `PATCH` | `/api/admin/users/{user}` | Required | Admin + active account |
+| `DELETE` | `/api/admin/users/{user}` | Required | Admin + active account |
 
-Account disabling is represented by `PATCH /api/admin/users/{user}` with `status: "DISABLED"`; no hard-delete endpoint is planned.
+`DELETE /api/admin/users/{user}` performs an idempotent logical deletion by changing status to `DISABLED`. It never removes the user row or historical ownership, membership, and assignment records. Administrators cannot delete their own account. `PATCH` remains available to reactivate a disabled account when appropriate.
 
 `GET /api/admin/users?page=1` returns users ordered by name with pagination metadata:
 

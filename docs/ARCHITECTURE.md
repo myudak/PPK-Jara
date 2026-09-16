@@ -19,7 +19,7 @@ Laravel and React live in one repository and deploy as one web application. Lara
 
 ## Responsibilities
 
-- **React:** client routing, session-aware navigation, forms, interaction state, and presentation. It never decides server authorization.
+- **React:** client routing, session-aware navigation, forms, interaction state, and shadcn-based presentation. It never decides server authorization.
 - **Laravel:** authentication, validation, authorization, business orchestration, JSON contracts, and SPA delivery.
 - **Eloquent/MySQL:** persistent state, relationships, constraints, and transaction boundaries.
 - **Sanctum:** first-party SPA session authentication with CSRF protection; no SPA bearer token is issued.
@@ -51,7 +51,7 @@ The list owner is an implicit participant and is not duplicated in `list_members
 
 ## Frontend organization
 
-Shared layout and UI live in `components`/`layouts`; domain-specific logic lives in `features`; API configuration lives in `lib`; URL-level composition lives in `pages` and `routes`; transport/domain shapes live in `types`. New abstractions require repeated use, not anticipated reuse.
+Shared shadcn primitives, layout, and UI live in `components`/`layouts`; domain-specific logic and API calls live in `features`; API configuration lives in `lib`; URL-level composition lives in `pages` and `routes`; transport/domain shapes live in `types`. The public landing page is `/`, while authenticated work begins at `/dashboard`. New abstractions require repeated use, not anticipated reuse.
 
 ## Deployment shape
 

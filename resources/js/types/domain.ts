@@ -21,6 +21,7 @@ export interface TaskList {
     owner_id: number;
     created_at: string;
     updated_at: string;
+    owner?: User;
 }
 
 export interface ListMember {
@@ -37,7 +38,8 @@ export interface Task {
     description: string | null;
     priority: TaskPriority;
     status: TaskStatus;
-    assignee_id: number | null;
+    assignee_ids: number[];
+    assignees?: User[];
     start_date: string | null;
     due_date: string | null;
     completed_at: string | null;

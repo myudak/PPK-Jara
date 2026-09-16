@@ -72,6 +72,8 @@ Owners are not inserted into this table. Application logic treats `task_lists.ow
 
 Tasks belong to a list and cascade when the list is deleted. `priority` defaults to `MEDIUM`. `assignee_id` is optional and becomes null if that user is deleted. Indexes support list/status, list/priority, assignee/status, and due-date queries. Application validation must ensure an assignee is the owner or a current list member.
 
+The current `assignee_id` column is the legacy single-assignee schema. SRS-027 changes the target contract to multiple assignees, but its backend migration is not implemented yet. The SRS-027 implementation must introduce a `task_assignees` pivot with a unique `(task_id, user_id)` key, migrate or intentionally reset existing assignments, update model relationships/factories/seed data, and only then remove `tasks.assignee_id`. Until that migration and the task endpoints land, the React multiple-assignee screens remain API-ready rather than end-to-end functional.
+
 ## Enumerated contracts
 
 Values are stored as bounded strings and cast to PHP backed enums:

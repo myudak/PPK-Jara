@@ -26,6 +26,8 @@ Lightweight ADRs record decisions that affect multiple modules. Add a dated entr
 
 **Reason:** Historical ownership, membership, and task context must remain intact.
 
+**Amendment (2026-09-16):** The admin API exposes `DELETE /api/admin/users/{user}` as the user-facing delete action, but implements it as an idempotent transition to `DISABLED`. Physical deletion remains prohibited.
+
 ## ADR-004 — Authorization Policies
 
 **Status:** Accepted
@@ -70,6 +72,14 @@ Lightweight ADRs record decisions that affect multiple modules. Add a dated entr
 
 **Status:** Accepted
 
-**Decision:** The foundation implements only login, logout, and current-user APIs. List, membership, task, and admin-user endpoints are documented as planned.
+**Decision:** Authentication and admin-user APIs are implemented. List, membership, and task endpoints remain documented as planned contracts until their domain owners deliver them.
 
-**Reason:** The scaffold establishes shared contracts without taking feature ownership away from the three programmers.
+**Reason:** The scaffold and frontend establish shared contracts without taking backend feature ownership away from the domain programmers.
+
+## ADR-010 — shadcn frontend design system
+
+**Status:** Accepted
+
+**Decision:** Use shadcn preset `bhOibP160` with Tailwind CSS v4 for shared React primitives and visual tokens.
+
+**Reason:** One accessible component foundation keeps public, workspace, and administration surfaces consistent while allowing feature teams to compose domain-specific UI.

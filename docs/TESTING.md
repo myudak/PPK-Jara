@@ -50,9 +50,10 @@ Run one backend test file with `php artisan test tests/Feature/Auth/Authenticati
 - [ ] Completing a task records completion time; reopening clears it.
 - [ ] List progress updates and handles a list with zero tasks.
 - [x] An administrator can list, create, edit, and disable users.
+- [x] An administrator can logically delete another account while preserving relationship history.
 - [x] A normal user cannot access administrator endpoints/pages.
 - [x] A disabled user cannot start or continue a session.
-- [ ] An administrator cannot disable or demote their own account via the admin page.
+- [x] An administrator cannot disable, demote, or delete their own account.
 - [ ] Loading, empty, validation, and server-error states are understandable.
 
 Items for unimplemented domain features remain expected failures in manual acceptance until their milestone lands; do not add placeholder automated tests that pretend endpoints exist.
