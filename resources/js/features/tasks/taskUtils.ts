@@ -13,7 +13,7 @@ export function isOverdue(task: Task, today: Date = new Date()): boolean {
     return task.due_date < todayKey;
 }
 
-export function nextStatus(task: Task): TaskStatus | null {
+export function nextStatus(task: Task): 'IN_PROGRESS' | 'COMPLETED' | null {
     if (task.status === 'TODO') {
         return 'IN_PROGRESS';
     }

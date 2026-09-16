@@ -2,7 +2,7 @@
 
 MySQL 8 is the runtime database. Automated tests use SQLite in memory, so migrations must remain portable unless a MySQL-specific feature is explicitly documented and tested.
 
-The current schema still carries the legacy single `tasks.assignee_id` column. The many-to-many `task_assignees` pivot below is the **planned** replacement (SRS-027) and does not exist yet; the migration that adds the pivot and drops `assignee_id` is part of the SRS-027 work package.
+The SRS-027 migration has shipped: the `task_assignees` pivot is the live schema and the legacy `tasks.assignee_id` column has been dropped (data was migrated into the pivot).
 
 ## Entity relationship diagram
 
@@ -12,8 +12,8 @@ erDiagram
     USERS ||--o{ LIST_MEMBERS : joins
     TASK_LISTS ||--o{ LIST_MEMBERS : includes
     TASK_LISTS ||--o{ TASKS : contains
-    USERS ||--o{ TASK_ASSIGNEES : "assigned to (planned)"
-    TASKS ||--o{ TASK_ASSIGNEES : "has assignees (planned)"
+    TASKS ||--o{ TASK_ASSIGNEES : assigns
+    USERS ||--o{ TASK_ASSIGNEES : takes
 
     USERS {
         bigint id PK
@@ -53,12 +53,15 @@ erDiagram
         timestamp updated_at
     }
     TASK_ASSIGNEES {
-        bigint task_id PK,FK
-        bigint user_id PK,FK
+        bigint id PK
+        bigint task_id FK
+        bigint user_id FK
+        timestamp created_at
+        timestamp updated_at
     }
 ```
 
-The legacy `USERS o|--o{ TASKS : assigned` relationship through `tasks.assignee_id` is superseded by the `TASK_ASSIGNEES` pivot once the SRS-027 migration ships.
+The legacy `USERS o|--o{ TASKS : assigned` relationship through `tasks.assignee_id` has been superseded by the `TASK_ASSIGNEES` pivot since the SRS-027 migration shipped.
 
 ## Tables and constraints
 
@@ -78,18 +81,11 @@ Owners are not inserted into this table. Application logic treats `task_lists.ow
 
 ### `tasks`
 
-Tasks belong to a list and cascade when the list is deleted. `priority` defaults to `MEDIUM`. **Legacy:** the schema currently still contains an optional nullable `assignee_id` (`SET NULL` on user deletion) with indexes supporting list/status, list/priority, assignee/status, and due-date queries; it accepts at most one assignee. The planned SRS-027 migration drops this column in favor of the `task_assignees` pivot below. Application validation must ensure every assignee is the owner or a current list member.
+Tasks belong to a list and cascade when the list is deleted. `priority` defaults to `MEDIUM`. Tasks carry no assignee column; assignment is stored in the `task_assignees` pivot. Indexes support list/status, list/priority, and due-date queries.
 
-### `task_assignees` (planned — SRS-027, not yet migrated)
+### `task_assignees`
 
-Many-to-many between `tasks` and `users`:
-
-- `task_id` references `tasks.id`, `cascadeOnDelete`.
-- `user_id` references `users.id`, `cascadeOnDelete`.
-- Composite primary key `(task_id, user_id)` doubles as the uniqueness guarantee so the same user cannot be assigned twice to the same task.
-- Optional supporting index on `(user_id, task_id)` for "tasks assigned to me" queries.
-- The pivot intentionally has no timestamps, mirroring `list_members`.
-- Removing a member deletes their pivot rows for tasks in the same list inside the membership-removal transaction.
+A task can be assigned to more than one participant. The composite unique `(task_id, user_id)` prevents duplicate assignment rows. Deleting a task or a user cascades its pivot rows. Application validation must ensure every assignee is the list owner or a current active member, and Form Requests reject duplicate ids in one request.
 
 ## Enumerated contracts
 
@@ -108,9 +104,10 @@ String columns keep status evolution migration-friendly; Form Requests and enums
 | --- | --- |
 | User owning lists | Restricted (hard delete) / decided by ADR-011 |
 | User membership rows | Cascade |
-| User task assignments | Legacy `assignee_id`: set null. Planned pivot: cascade delete of `task_assignees` rows |
+| User task assignments | Cascade (`task_assignees` rows removed) |
 | Task list memberships | Cascade |
 | Task list tasks | Cascade (including their `task_assignees` rows) |
+| Task assignments (task deleted) | Cascade |
 | Planned admin account deletion (SRS-028) | Strategy open in ADR-011; must be atomic and leave no broken relations |
 
 Hard user deletion is not an ordinary product action today; accounts are disabled to preserve ownership and audit context. SRS-028 introduces administrator-initiated deletion whose strategy (hard delete, soft delete, or disable-only) is the open decision ADR-011.

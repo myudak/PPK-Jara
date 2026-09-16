@@ -1,7 +1,13 @@
 import { useState, type FormEvent } from 'react';
 import { isAxiosError } from 'axios';
 
-import { createTask, extractFieldErrors, updateTask, type TaskFieldErrors, type TaskFormData } from './api';
+import {
+    createTask,
+    extractFieldErrors,
+    updateTask,
+    type TaskFieldErrors,
+    type TaskFormData,
+} from './api';
 import { priorityLabel, statusLabel } from './taskUtils';
 import type { Task, TaskPriority, TaskStatus, User } from '@/types/domain';
 
@@ -22,13 +28,19 @@ function toFormData(task: Task | null): TaskFormData {
         description: task?.description ?? '',
         priority: task?.priority ?? 'MEDIUM',
         status: task?.status ?? 'TODO',
-        assignee_id: task?.assignee_id === null || task?.assignee_id === undefined ? '' : String(task.assignee_id),
+        assignee_ids: task?.assignees.map((user) => String(user.id)) ?? [],
         start_date: task?.start_date ?? '',
         due_date: task?.due_date ?? '',
     };
 }
 
-export function TaskFormDialog({ listId, editingTask, participants, onCancel, onSaved }: TaskFormDialogProps) {
+export function TaskFormDialog({
+    listId,
+    editingTask,
+    participants,
+    onCancel,
+    onSaved,
+}: TaskFormDialogProps) {
     const [form, setForm] = useState<TaskFormData>(() => toFormData(editingTask));
     const [isSaving, setIsSaving] = useState(false);
     const [fieldErrors, setFieldErrors] = useState<TaskFieldErrors>({});
@@ -48,11 +60,16 @@ export function TaskFormDialog({ listId, editingTask, participants, onCancel, on
             } else {
                 await updateTask(editingTask, form);
             }
-            onSaved(editingTask === null ? 'Task created successfully.' : 'Task updated successfully.');
+            onSaved(
+                editingTask === null ? 'Task created successfully.' : 'Task updated successfully.',
+            );
         } catch (requestError: unknown) {
             if (isAxiosError(requestError)) {
-                const response = requestError.response?.data as { message?: string; errors?: Record<string, string[]> } | undefined;
-                setFieldErrors(extractFieldErrors(response?.message ?? 'Validation failed.', response?.errors));
+                const response = requestError.response?.data as
+                    { message?: string; errors?: Record<string, string[]> } | undefined;
+                setFieldErrors(
+                    extractFieldErrors(response?.message ?? 'Validation failed.', response?.errors),
+                );
             } else {
                 setFieldErrors({ form: 'An unexpected error occurred.' });
             }
@@ -62,7 +79,12 @@ export function TaskFormDialog({ listId, editingTask, participants, onCancel, on
     };
 
     return (
-        <section className="task-dialog" role="dialog" aria-modal="true" aria-label={editingTask === null ? 'Create task' : 'Edit task'}>
+        <section
+            className="task-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label={editingTask === null ? 'Create task' : 'Edit task'}
+        >
             <form className="task-form" onSubmit={(event) => void handleSubmit(event)} noValidate>
                 <header className="task-form-header">
                     <h2>{editingTask === null ? 'New task' : 'Edit task'}</h2>
@@ -86,7 +108,9 @@ export function TaskFormDialog({ listId, editingTask, participants, onCancel, on
                     aria-invalid={fieldErrors.title !== undefined}
                     required
                 />
-                {fieldErrors.title !== undefined && <p className="form-error">{fieldErrors.title}</p>}
+                {fieldErrors.title !== undefined && (
+                    <p className="form-error">{fieldErrors.title}</p>
+                )}
 
                 <label htmlFor="task-description">Description (optional)</label>
                 <textarea
@@ -97,7 +121,9 @@ export function TaskFormDialog({ listId, editingTask, participants, onCancel, on
                     onChange={(event) => setField('description', event.target.value)}
                     aria-invalid={fieldErrors.description !== undefined}
                 />
-                {fieldErrors.description !== undefined && <p className="form-error">{fieldErrors.description}</p>}
+                {fieldErrors.description !== undefined && (
+                    <p className="form-error">{fieldErrors.description}</p>
+                )}
 
                 <div className="task-form-grid">
                     <label htmlFor="task-priority">Priority</label>
@@ -105,7 +131,9 @@ export function TaskFormDialog({ listId, editingTask, participants, onCancel, on
                         id="task-priority"
                         name="priority"
                         value={form.priority}
-                        onChange={(event) => setField('priority', event.target.value as TaskPriority)}
+                        onChange={(event) =>
+                            setField('priority', event.target.value as TaskPriority)
+                        }
                     >
                         {PRIORITIES.map((priority) => (
                             <option key={priority} value={priority}>
@@ -128,20 +156,37 @@ export function TaskFormDialog({ listId, editingTask, participants, onCancel, on
                         ))}
                     </select>
 
-                    <label htmlFor="task-assignee">Assignee (optional)</label>
+                    <label htmlFor="task-assignees">Assignees (optional)</label>
                     <select
-                        id="task-assignee"
-                        name="assignee_id"
-                        value={form.assignee_id}
-                        onChange={(event) => setField('assignee_id', event.target.value)}
+                        id="task-assignees"
+                        name="assignee_ids"
+                        multiple
+                        size={Math.max(participants.length, 2)}
+                        value={form.assignee_ids}
+                        onChange={(event) =>
+                            setField(
+                                'assignee_ids',
+                                Array.from(event.target.selectedOptions, (option) => option.value),
+                            )
+                        }
+                        aria-invalid={fieldErrors.assignee_ids !== undefined}
+                        aria-describedby={
+                            fieldErrors.assignee_ids !== undefined
+                                ? 'task-assignees-error'
+                                : undefined
+                        }
                     >
-                        <option value="">Unassigned</option>
                         {participants.map((participant) => (
                             <option key={participant.id} value={String(participant.id)}>
                                 {participant.name}
                             </option>
                         ))}
                     </select>
+                    {fieldErrors.assignee_ids !== undefined && (
+                        <p id="task-assignees-error" className="form-error">
+                            {fieldErrors.assignee_ids}
+                        </p>
+                    )}
 
                     <label htmlFor="task-start-date">Start date (optional)</label>
                     <input
@@ -152,7 +197,9 @@ export function TaskFormDialog({ listId, editingTask, participants, onCancel, on
                         onChange={(event) => setField('start_date', event.target.value)}
                         aria-invalid={fieldErrors.start_date !== undefined}
                     />
-                    {fieldErrors.start_date !== undefined && <p className="form-error">{fieldErrors.start_date}</p>}
+                    {fieldErrors.start_date !== undefined && (
+                        <p className="form-error">{fieldErrors.start_date}</p>
+                    )}
 
                     <label htmlFor="task-due-date">Due date (optional)</label>
                     <input
@@ -163,14 +210,21 @@ export function TaskFormDialog({ listId, editingTask, participants, onCancel, on
                         onChange={(event) => setField('due_date', event.target.value)}
                         aria-invalid={fieldErrors.due_date !== undefined}
                     />
-                    {fieldErrors.due_date !== undefined && <p className="form-error">{fieldErrors.due_date}</p>}
+                    {fieldErrors.due_date !== undefined && (
+                        <p className="form-error">{fieldErrors.due_date}</p>
+                    )}
                 </div>
 
                 <footer className="task-form-actions">
                     <button type="submit" className="primary-button" disabled={isSaving}>
                         {isSaving ? 'Saving…' : 'Save task'}
                     </button>
-                    <button type="button" className="primary-button task-form-cancel" onClick={onCancel} disabled={isSaving}>
+                    <button
+                        type="button"
+                        className="primary-button task-form-cancel"
+                        onClick={onCancel}
+                        disabled={isSaving}
+                    >
                         Cancel
                     </button>
                 </footer>

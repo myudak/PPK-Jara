@@ -86,31 +86,20 @@ Successful login and `/api/me` return the public user fields:
 
 Adding the owner as a pivot member and duplicate membership are rejected with `422`.
 
-Removing a member deletes that member's task assignments within the same list inside one database transaction so no assignment survives a removed membership. With the current single-assignee schema the legacy `assignee_id` is cleared; once the SRS-027 pivot ships, the member's rows in `task_assignees` for that list are deleted instead. Both variants are all-or-nothing.
+Removing a member deletes that member's rows in `task_assignees` for tasks within the same list inside one database transaction, so no assignment survives a removed membership. Both the membership removal and the assignment cleanup are all-or-nothing.
 
 ## Implemented task endpoints
 
 | Method | Endpoint | Authorization | Expected input |
 | --- | --- | --- | --- |
 | `GET` | `/api/lists/{list}/tasks` | Owner or member | Optional `priority`, `status` filters; optional `sort` (`priority`, `due_date`) and `direction` (`asc`, `desc`) |
-| `POST` | `/api/lists/{list}/tasks` | Owner or member | `title`; optional description/priority/status/assignee/dates |
+| `POST` | `/api/lists/{list}/tasks` | Owner or member | `title`; optional description/priority/status/`assignee_ids`/dates |
 | `GET` | `/api/tasks/{task}` | Participant in task’s list | None |
 | `PATCH` | `/api/tasks/{task}` | Participant in task’s list | Editable task fields |
 | `DELETE` | `/api/tasks/{task}` | Participant in task’s list | None |
 | `GET` | `/api/lists/{list}/progress` | Owner or member | None |
 
-Priority accepts `LOW`, `MEDIUM`, or `HIGH` and defaults to `MEDIUM`. Status accepts `TODO`, `IN_PROGRESS`, or `COMPLETED` and defaults to `TODO`. **Current (legacy) assignment accepts a single `assignee_id`** that must be null, the list owner, or a current member. Setting status to `COMPLETED` sets `completed_at`; moving away from completion clears it. Date validation rejects a due date earlier than the start date. The progress endpoint returns `{ "total": int, "completed": int, "percent": int }` and reports `0` percent for lists without tasks.
-
-### Planned task contract change — multiple assignees (SRS-027)
-
-Until implemented, the following replaces the single `assignee_id` contract:
-
-- Task creation (`POST /api/lists/{list}/tasks`) and update (`PATCH /api/tasks/{task}`) accept `assignee_ids: number[]` (array of user IDs) instead of `assignee_id`.
-- An empty array or an omitted field means the task has no assignee.
-- Every ID must reference the list owner or a current member; any foreign ID rejects the whole request with `422` per-field errors.
-- Duplicate IDs within one request are rejected with `422` (a user cannot be assigned twice to the same task).
-- Changing the assignee set is atomic: either the full new set is stored in `task_assignees` or nothing changes (SRS-029).
-- Task responses include an `assignees` array of public user objects; `assignee_id` is removed from responses after the migration.
+Priority accepts `LOW`, `MEDIUM`, or `HIGH` and defaults to `MEDIUM`. Status accepts `TODO`, `IN_PROGRESS`, or `COMPLETED` and defaults to `TODO`. Assignment is optional and multi-valued: send `assignee_ids` as an array of user ids; every assignee must be the list owner or a current member, duplicates are rejected with `422`, and sending the key replaces the full assignment set (an empty array unassigns everyone; omitting the key on `PATCH` keeps existing assignments). Task responses expose `assignee_ids` (list of user ids) and `assignees` (list of user objects). Removing a member clears their assignments within that list in a transaction. Setting status to `COMPLETED` sets `completed_at`; moving away from completion clears it. Date validation rejects a due date earlier than the start date. The progress endpoint returns `{ "total": int, "completed": int, "percent": int }` and reports `0` percent for lists without tasks.
 
 ## Implemented administrator endpoints
 

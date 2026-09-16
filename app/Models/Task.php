@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 #[Fillable([
     'task_list_id',
@@ -16,7 +17,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'description',
     'priority',
     'status',
-    'assignee_id',
     'start_date',
     'due_date',
     'completed_at',
@@ -32,10 +32,20 @@ class Task extends Model
         return $this->belongsTo(TaskList::class);
     }
 
-    /** @return BelongsTo<User, $this> */
-    public function assignee(): BelongsTo
+    /** @return BelongsToMany<User, $this> */
+    public function assignees(): BelongsToMany
     {
-        return $this->belongsTo(User::class, 'assignee_id');
+        return $this->belongsToMany(User::class, 'task_assignees')->orderByPivot('id');
+    }
+
+    /**
+     * Replace the task assignees in a single operation.
+     *
+     * @param  list<int>  $userIds
+     */
+    public function syncAssignees(array $userIds): void
+    {
+        $this->assignees()->sync($userIds);
     }
 
     /** @return array<string, string> */

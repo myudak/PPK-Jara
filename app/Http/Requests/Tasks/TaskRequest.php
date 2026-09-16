@@ -30,33 +30,48 @@ abstract class TaskRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'priority' => ['nullable', Rule::enum(TaskPriority::class)],
             'status' => ['nullable', Rule::enum(TaskStatus::class)],
-            'assignee_id' => ['nullable', 'integer', Rule::exists('users', 'id'), $this->validateAssignee(...)],
+            'assignee_ids' => ['nullable', 'array', $this->validateAssignees(...)],
+            'assignee_ids.*' => ['integer', Rule::exists('users', 'id')],
             'start_date' => ['nullable', 'date'],
             'due_date' => ['nullable', 'date', $this->validateDueDate(...)],
         ];
     }
 
-    private function validateAssignee(string $attribute, mixed $value, Closure $fail): void
+    private function validateAssignees(string $attribute, mixed $value, Closure $fail): void
     {
+        if (! is_array($value)) {
+            return;
+        }
+
         $list = $this->taskList();
 
-        if ($list === null || ! is_numeric($value)) {
+        if ($list === null) {
             return;
         }
 
-        $userId = (int) $value;
+        $userIds = array_map(intval(...), array_values(array_filter($value, is_numeric(...))));
 
-        if ($list->owner_id === $userId) {
+        if (count($userIds) !== count(array_unique($userIds))) {
+            $fail('The assignee ids must not contain duplicates.');
+
             return;
         }
 
-        $isMember = $list->members()
-            ->whereKey($userId)
+        if ($userIds === []) {
+            return;
+        }
+
+        $activeMemberIds = $list->members()
+            ->whereIn('users.id', $userIds)
             ->where('users.status', UserStatus::Active->value)
-            ->exists();
+            ->pluck('users.id');
 
-        if (! $isMember) {
-            $fail('The assignee must be the list owner or a current member of the list.');
+        foreach ($userIds as $userId) {
+            if ($userId !== $list->owner_id && ! $activeMemberIds->contains($userId)) {
+                $fail('Every assignee must be the list owner or a current member of the list.');
+
+                return;
+            }
         }
     }
 

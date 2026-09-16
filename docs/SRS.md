@@ -38,6 +38,7 @@ Sebagai administrator, saya ingin mengelola akun pengguna, termasuk menonaktifka
 | **SRS-016** | Pengguna dapat menentukan prioritas tugas. | - Prioritas hanya `LOW`, `MEDIUM`, atau `HIGH`.<br>- Tugas baru memiliki prioritas default `MEDIUM`.<br>- Prioritas dapat diubah oleh peserta daftar.<br>- Prioritas terlihat pada daftar dan detail tugas.<br>- Tugas dapat difilter atau diurutkan berdasarkan prioritas. |
 | **SRS-017** | Tugas dapat diberikan kepada peserta daftar. *(Superseded sebagian oleh SRS-027: bagian single-assignee tidak lagi aktif.)* | - Tugas boleh tidak memiliki assignee.<br>- Assignee hanya boleh pemilik atau anggota aktif pada daftar yang sama.<br>- Pengguna di luar daftar tidak dapat dipilih atau dikirim melalui API.<br>- Saat anggota dihapus, assignment miliknya pada daftar tersebut menjadi kosong. *(Bagian ini digantikan SRS-027: assignment anggota dihapus dari pivot `task_assignees` secara atomic.)* |
 | **SRS-018** | Aplikasi menampilkan progres daftar tugas. | - Progres dihitung dari jumlah tugas `COMPLETED` dibanding total tugas.<br>- Perubahan status memperbarui progres.<br>- Daftar tanpa tugas tidak menghasilkan pembagian dengan nol.<br>- Nilai progres konsisten antara API dan UI. |
+| **SRS-027** | Satu tugas dapat diberikan kepada lebih dari satu anggota. | - Assignee disimpan sebagai banyak peserta daftar pada pivot `task_assignees`.<br>- Setiap assignee wajib pemilik atau anggota aktif pada daftar yang sama.<br>- Duplikasi id assignee pada satu request ditolak.<br>- Pengiriman `assignee_ids` menggantikan seluruh penugasan sebelumnya.<br>- Saat anggota dihapus, penugasannya pada daftar tersebut dihapus. |
 | **SRS-019** | Administrator dapat melihat daftar pengguna. | - Endpoint dan halaman hanya dapat diakses role `ADMIN`.<br>- Daftar menampilkan identitas, role, dan status akun.<br>- Pengguna biasa menerima respons `403`.<br>- Kondisi loading, kosong, dan error tersedia. |
 | **SRS-020** | Administrator dapat membuat pengguna. | - Nama, username, email, password, role, dan status divalidasi.<br>- Username dan email harus unik.<br>- Password disimpan dalam bentuk hash.<br>- Role hanya `USER` atau `ADMIN`.<br>- Tidak tersedia registrasi publik. |
 | **SRS-021** | Administrator dapat mengubah dan menonaktifkan pengguna. *(Superseded sebagian oleh SRS-028 jika stakeholder memutuskan penghapusan akun menggantikan status `DISABLED`; sampai keputusan tersebut requirement ini tetap aktif.)* | - Administrator dapat mengubah data pengguna yang diizinkan.<br>- Status dapat diubah menjadi `ACTIVE` atau `DISABLED`.<br>- Penonaktifan menghentikan akses pengguna.<br>- Pengguna tidak dihapus permanen melalui alur normal. *(Digantikan SRS-028 bila penghapusan akun disetujui.)*<br>- Relasi historis tetap utuh. |
@@ -61,6 +62,99 @@ MVP tidak mencakup registrasi publik, lupa password, notifikasi, komentar tugas,
 2. "Hapus akun" tidak lagi berarti otomatis menonaktifkan akun (`DISABLED`). Status `DISABLED` tetap tersedia sebagai status akun, namun makna final operasi penghapusan akun menunggu keputusan ADR-011.
 
 Penambahan fitur di luar daftar SRS harus dibahas sebagai perubahan scope.
+
+## Diagram Ringkas
+
+### Peran dan Modul
+
+```mermaid
+flowchart LR
+    U(["👤 Pengguna"])
+    O(["👑 Pemilik Daftar"])
+    A(["🛠️ Administrator"])
+
+    subgraph AUTH [Autentikasi & Akun — SRS-002..005]
+        F1["Login / Session / Logout\nAkun DISABLED ditolak"]
+    end
+
+    subgraph LIST [Workspace Daftar — SRS-006..010]
+        F2["Lihat / buat / ubah / hapus daftar\nKelola anggota (owner saja)"]
+    end
+
+    subgraph TASK [Tugas — SRS-011..017, SRS-027]
+        F3["CRUD tugas, status + completed_at,\ntanggal & prioritas\nMulti-assignee pada pivot task_assignees"]
+    end
+
+    subgraph PROG [Progres — SRS-018]
+        F4["% tugas COMPLETED"]
+    end
+
+    subgraph ADMIN [Admin Users — SRS-019..021]
+        F5["Lihat / buat / ubah / nonaktifkan akun"]
+    end
+
+    CROSS ["Kontrol akses &amp; envelope API — SRS-022, SRS-023"]
+
+    U --> F1
+    U --> F2
+    U --> F3
+    O --> F2
+    O --> F3
+    O --> F4
+    A --> F1
+    A --> F5
+    F1 -.-> CROSS
+    F2 -.-> CROSS
+    F3 -.-> CROSS
+    F4 -.-> CROSS
+    F5 -.-> CROSS
+```
+
+### Model Data Inti
+
+```mermaid
+erDiagram
+    USERS ||--o{ TASK_LISTS : "memiliki (owner)"
+    USERS ||--o{ LIST_MEMBERS : "berpartisipasi"
+    TASK_LISTS ||--o{ LIST_MEMBERS : ""
+    TASK_LISTS ||--o{ TASKS : ""
+    TASKS ||--o{ TASK_ASSIGNEES : ""
+    USERS ||--o{ TASK_ASSIGNEES : "ditugaskan"
+
+    USERS {
+        bigint id PK
+        string username UK
+        string email UK
+        string password_hash
+        enum role "USER | ADMIN"
+        enum status "ACTIVE | DISABLED"
+    }
+    TASK_LISTS {
+        bigint id PK
+        bigint owner_id FK "owner = peserta implisit"
+        string name
+        text description
+    }
+    LIST_MEMBERS {
+        bigint task_list_id FK "UK: list + user"
+        bigint user_id FK
+        timestamp joined_at
+    }
+    TASKS {
+        bigint id PK
+        bigint task_list_id FK "cascade delete"
+        string title
+        enum status "TODO | IN_PROGRESS | COMPLETED"
+        enum priority "LOW | MEDIUM | HIGH"
+        date start_date
+        date due_date ">= start_date"
+        timestamp completed_at
+    }
+    TASK_ASSIGNEES {
+        bigint task_id FK "UK: task + user"
+        bigint user_id FK "owner/anggota aktif daftar"
+    }
+```
 
 ## Catatan Implementasi Saat Ini
 

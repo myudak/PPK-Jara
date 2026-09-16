@@ -19,7 +19,6 @@ class TaskFactory extends Factory
             'description' => fake()->optional()->sentence(),
             'priority' => TaskPriority::Medium,
             'status' => TaskStatus::Todo,
-            'assignee_id' => null,
             'start_date' => null,
             'due_date' => null,
             'completed_at' => null,
