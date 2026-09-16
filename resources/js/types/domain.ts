@@ -21,6 +21,7 @@ export interface TaskList {
     owner_id: number;
     created_at: string;
     updated_at: string;
+    owner?: User;
 }
 
 export interface ListMember {

@@ -110,14 +110,10 @@ Implemented endpoints:
 | `GET`/`PATCH`/`DELETE` | `/api/tasks/{task}` | Task detail, update, delete |
 | `GET` | `/api/lists/{list}/progress` | List progress summary |
 | `GET`/`POST` | `/api/admin/users` | User directory; user creation |
-| `PATCH` | `/api/admin/users/{user}` | Edit or disable a user |
+| `PATCH` | `/api/admin/users/{user}` | Edit, disable, or reactivate a user |
+| `DELETE` | `/api/admin/users/{user}` | Logical account deletion (idempotent transition to `DISABLED`; SRS-028) |
 
-Planned (documented contract, not implemented — do not use before it ships):
-
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| `DELETE` | `/api/admin/users/{user}` | Administrator deletes a user account (SRS-028; blocked on the ADR-011 deletion-strategy decision) |
-| `assignee_ids` task input / `assignees` in task responses | task endpoints | Multiple assignees via the `task_assignees` pivot (SRS-027; current API still uses single `assignee_id`) |
+Task input uses `assignee_ids` and task responses return `assignees` through the `task_assignees` pivot (SRS-027).
 
 See [API documentation](docs/API.md) for the authoritative endpoint status.
 
@@ -191,11 +187,12 @@ Ownership clarifies responsibility; it does not permit unilateral changes to sha
 
 The repository includes authentication, schema, relationships, policies, seed data, consistent API envelopes, task and progress endpoints, admin-user endpoints, protected frontend routing, and testing/linting configuration.
 
-Recommended next tasks (2026-09-16 revision):
+Recommended next tasks (after the 2026-09-16 merges — PR #13, #14, #15):
 
-1. Yuda: wrap all multi-record operations in transactions, audit Form Requests, and add rollback plus SQL-injection test suites (SRS-029, SRS-030).
-2. Hafidh: ship the `task_assignees` pivot, `assignee_ids` input, `assignees` responses, and the multi-assignee UI (SRS-027).
-3. Zaidaan: configure shadcn preset `bhOibP160`, complete the React feature integration, and add the public landing page at `/` (SRS-031, SRS-026, SRS-032); then implement admin account deletion once the ADR-011 deletion strategy is approved (SRS-028).
+1. Done — Yuda: atomic list/member/task operations with rollback tests (SRS-029, SRS-030).
+2. Done — Hafidh: `task_assignees` pivot, `assignee_ids` input, `assignees` responses, multi-assignee UI (SRS-027).
+3. Done — Zaidaan: shadcn preset `bhOibP160`, React feature integration, landing page at `/` (SRS-031, SRS-026, SRS-032), and logical admin account deletion (SRS-028).
+4. Remaining — extend transaction/rollback coverage to any remaining multi-record writes and keep the manual acceptance checklist in [TESTING.md](docs/TESTING.md) current.
 
 ## Documentation
 

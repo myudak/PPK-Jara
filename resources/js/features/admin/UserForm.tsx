@@ -1,6 +1,25 @@
 import { useState, type FormEvent } from 'react';
 import { isAxiosError } from 'axios';
 
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { createAdminUser, updateAdminUser } from '@/features/admin/api';
 import { getApiErrorMessage } from '@/lib/api';
 import type { ApiFailure } from '@/types/api';
@@ -19,7 +38,6 @@ const STATUS_OPTIONS: UserStatus[] = ['ACTIVE', 'DISABLED'];
 export function UserForm({ user, currentUserId, onClose, onSaved }: UserFormProps) {
     const isEdit = user !== null;
     const isSelf = isEdit && user.id === currentUserId;
-
     const [name, setName] = useState(user?.name ?? '');
     const [username, setUsername] = useState(user?.username ?? '');
     const [email, setEmail] = useState(user?.email ?? '');
@@ -56,146 +74,200 @@ export function UserForm({ user, currentUserId, onClose, onSaved }: UserFormProp
         } catch (requestError: unknown) {
             if (isAxiosError(requestError)) {
                 const failure = requestError.response?.data as ApiFailure | undefined;
-
                 if (failure?.errors !== undefined) {
                     setFieldErrors(failure.errors);
                 }
-
                 setError(failure?.message ?? getApiErrorMessage(requestError));
             } else {
                 setError(getApiErrorMessage(requestError));
             }
-
             setIsSaving(false);
         }
     };
 
-    const renderFieldError = (field: string) => {
-        const messages = fieldErrors[field];
-
-        if (messages === undefined || messages.length === 0) {
-            return null;
-        }
-
-        return (
-            <p className="form-error" role="alert">
-                {messages.join(' ')}
-            </p>
-        );
-    };
+    const fieldError = (field: string) => fieldErrors[field]?.join(' ');
 
     return (
-        <section className="dialog-overlay">
-            <div
-                className="dialog-card"
-                role="dialog"
-                aria-modal="true"
-                aria-label={isEdit ? `Edit user ${user.name}` : 'Create user'}
-            >
-                <header className="dialog-header">
-                    <div>
-                        <p className="eyebrow">{isEdit ? 'Edit user' : 'New user'}</p>
-                        <h2>{isEdit ? user.name : 'Create user.'}</h2>
-                    </div>
-                    <button type="button" className="text-button" onClick={onClose}>
-                        Cancel
-                    </button>
-                </header>
+        <Dialog
+            open
+            onOpenChange={(open) => {
+                if (!open && !isSaving) {
+                    onClose();
+                }
+            }}
+        >
+            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle>{isEdit ? `Edit ${user.name}` : 'Create user'}</DialogTitle>
+                    <DialogDescription>
+                        {isEdit
+                            ? 'Update identity, credentials, role, or account status.'
+                            : 'Create a managed account for a new JARA participant.'}
+                    </DialogDescription>
+                </DialogHeader>
 
-                {isSelf && (
-                    <p className="form-error" role="note">
-                        You cannot change your own role or status.
-                    </p>
-                )}
+                {isSelf ? (
+                    <Alert>
+                        <AlertDescription>
+                            You cannot change your own role or status.
+                        </AlertDescription>
+                    </Alert>
+                ) : null}
 
-                <form onSubmit={(event) => void handleSubmit(event)} noValidate>
-                    <label htmlFor="user-form-name">Name</label>
-                    <input
-                        id="user-form-name"
-                        value={name}
-                        onChange={(event) => setName(event.target.value)}
-                        required
-                    />
-                    {renderFieldError('name')}
-
-                    <label htmlFor="user-form-username">Username</label>
-                    <input
-                        id="user-form-username"
-                        value={username}
-                        onChange={(event) => setUsername(event.target.value)}
-                        autoComplete="off"
-                        required
-                    />
-                    {renderFieldError('username')}
-
-                    <label htmlFor="user-form-email">Email</label>
-                    <input
-                        id="user-form-email"
-                        type="email"
-                        value={email}
-                        onChange={(event) => setEmail(event.target.value)}
-                        autoComplete="off"
-                        required
-                    />
-                    {renderFieldError('email')}
-
-                    <label htmlFor="user-form-password">
-                        {isEdit ? 'New password (leave blank to keep current)' : 'Password'}
-                    </label>
-                    <input
-                        id="user-form-password"
-                        type="password"
-                        value={password}
-                        onChange={(event) => setPassword(event.target.value)}
-                        autoComplete="new-password"
-                        required={!isEdit}
-                        minLength={isEdit ? undefined : 8}
-                    />
-                    {renderFieldError('password')}
-
-                    <label htmlFor="user-form-role">Role</label>
-                    <select
-                        id="user-form-role"
-                        value={role}
-                        disabled={isSelf}
-                        onChange={(event) => setRole(event.target.value as UserRole)}
-                    >
-                        {ROLE_OPTIONS.map((option) => (
-                            <option key={option} value={option}>
-                                {option}
-                            </option>
-                        ))}
-                    </select>
-                    {renderFieldError('role')}
-
-                    <label htmlFor="user-form-status">Status</label>
-                    <select
-                        id="user-form-status"
-                        value={status}
-                        disabled={isSelf}
-                        onChange={(event) => setStatus(event.target.value as UserStatus)}
-                    >
-                        {STATUS_OPTIONS.map((option) => (
-                            <option key={option} value={option}>
-                                {option}
-                            </option>
-                        ))}
-                    </select>
-                    {renderFieldError('status')}
-
-                    {error !== null &&
-                        fieldErrors.username === undefined &&
-                        fieldErrors.email === undefined && (
-                            <p className="form-error" role="alert">
-                                {error}
+                <form
+                    id="user-form"
+                    className="space-y-4"
+                    onSubmit={(event) => void handleSubmit(event)}
+                    noValidate
+                >
+                    <div className="space-y-2">
+                        <Label htmlFor="user-form-name">Name</Label>
+                        <Input
+                            id="user-form-name"
+                            value={name}
+                            onChange={(event) => setName(event.target.value)}
+                            aria-invalid={fieldError('name') !== undefined}
+                            aria-describedby={
+                                fieldError('name') ? 'user-form-name-error' : undefined
+                            }
+                            required
+                        />
+                        {fieldError('name') ? (
+                            <p id="user-form-name-error" className="text-sm text-destructive">
+                                {fieldError('name')}
                             </p>
-                        )}
+                        ) : null}
+                    </div>
 
-                    <button type="submit" className="primary-button" disabled={isSaving}>
-                        {isSaving ? 'Saving…' : isEdit ? 'Save changes' : 'Create user'}
-                    </button>
+                    <div className="space-y-2">
+                        <Label htmlFor="user-form-username">Username</Label>
+                        <Input
+                            id="user-form-username"
+                            value={username}
+                            onChange={(event) => setUsername(event.target.value)}
+                            autoComplete="off"
+                            aria-invalid={fieldError('username') !== undefined}
+                            aria-describedby={
+                                fieldError('username') ? 'user-form-username-error' : undefined
+                            }
+                            required
+                        />
+                        {fieldError('username') ? (
+                            <p id="user-form-username-error" className="text-sm text-destructive">
+                                {fieldError('username')}
+                            </p>
+                        ) : null}
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="user-form-email">Email</Label>
+                        <Input
+                            id="user-form-email"
+                            type="email"
+                            value={email}
+                            onChange={(event) => setEmail(event.target.value)}
+                            autoComplete="off"
+                            aria-invalid={fieldError('email') !== undefined}
+                            aria-describedby={
+                                fieldError('email') ? 'user-form-email-error' : undefined
+                            }
+                            required
+                        />
+                        {fieldError('email') ? (
+                            <p id="user-form-email-error" className="text-sm text-destructive">
+                                {fieldError('email')}
+                            </p>
+                        ) : null}
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="user-form-password">
+                            {isEdit ? 'New password (optional)' : 'Password'}
+                        </Label>
+                        <Input
+                            id="user-form-password"
+                            type="password"
+                            value={password}
+                            onChange={(event) => setPassword(event.target.value)}
+                            autoComplete="new-password"
+                            aria-invalid={fieldError('password') !== undefined}
+                            aria-describedby={
+                                fieldError('password') ? 'user-form-password-error' : undefined
+                            }
+                            required={!isEdit}
+                            minLength={isEdit ? undefined : 8}
+                        />
+                        {fieldError('password') ? (
+                            <p id="user-form-password-error" className="text-sm text-destructive">
+                                {fieldError('password')}
+                            </p>
+                        ) : null}
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-2">
+                            <Label htmlFor="user-form-role">Role</Label>
+                            <Select
+                                value={role}
+                                disabled={isSelf}
+                                onValueChange={(value) => setRole(value as UserRole)}
+                            >
+                                <SelectTrigger id="user-form-role" className="w-full">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {ROLE_OPTIONS.map((option) => (
+                                        <SelectItem key={option} value={option}>
+                                            {option}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="user-form-status">Status</Label>
+                            <Select
+                                value={status}
+                                disabled={isSelf}
+                                onValueChange={(value) => setStatus(value as UserStatus)}
+                            >
+                                <SelectTrigger id="user-form-status" className="w-full">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {STATUS_OPTIONS.map((option) => (
+                                        <SelectItem key={option} value={option}>
+                                            {option}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
+                    {error !== null ? (
+                        <Alert variant="destructive" role="alert">
+                            <AlertDescription>{error}</AlertDescription>
+                        </Alert>
+                    ) : null}
                 </form>
-            </div>
-        </section>
+
+                <DialogFooter>
+                    <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>
+                        Cancel
+                    </Button>
+                    <Button
+                        type="submit"
+                        form="user-form"
+                        disabled={isSaving}
+                        focusableWhenDisabled
+                        aria-live="polite"
+                        aria-busy={isSaving}
+                    >
+                        {isSaving ? 'Saving...' : isEdit ? 'Save changes' : 'Create user'}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }

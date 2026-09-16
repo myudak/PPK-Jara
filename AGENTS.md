@@ -69,7 +69,7 @@ Changing a shared contract requires updating affected backend and frontend code,
 - Wrap multi-record writes (list deletion, member removal with assignment cleanup, task creation/update with assignees, account deletion) in `DB::transaction`; a failed step rolls back everything.
 - Use enums from `app/Enums` rather than raw status strings.
 - Use API Resources for stable public shapes.
-- Prefer disabling users. Admin account deletion (SRS-028) is planned; its hard/soft/disable strategy is the open decision in ADR-011 and must be decided and recorded before implementation.
+- Prefer disabling users. Admin account deletion (SRS-028) is implemented as logical deletion: `DELETE /api/admin/users/{user}` transitions the account to `DISABLED` and preserves all records (decided in ADR-011).
 - Membership must remain unique on `(task_list_id, user_id)`; assignment must remain unique on `(task_id, user_id)` in `task_assignees`.
 - Never manually modify a production schema.
 

@@ -16,7 +16,7 @@ Menangani CRUD daftar/list/project, pembatasan daftar yang dapat dilihat, pengel
 
 Menangani login, logout, session pengguna, pembatasan akun nonaktif, daftar pengguna, pembuatan dan perubahan akun, role/status, endpoint administrator, UI, serta pengujiannya.
 
-**Revisi 2026-09-16 — tambahan:** SRS-026 (integrasi seluruh frontend React), SRS-028 (penghapusan akun oleh admin, menunggu keputusan ADR-011), SRS-031 (design system shadcn preset `bhOibP160`), SRS-032 (landing page publik `/`).
+**Revisi 2026-09-16 — tambahan:** SRS-026 (integrasi seluruh frontend React), SRS-028 (penghapusan logis akun oleh admin — keputusan ADR-011: logical deletion ke `DISABLED`, terimplementasi di PR #15), SRS-031 (design system shadcn preset `bhOibP160`), SRS-032 (landing page publik `/`).
 
 ### Muhammad Hafidh Zufar Dewantara — 24060124140164
 

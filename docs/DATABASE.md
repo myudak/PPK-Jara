@@ -87,6 +87,8 @@ Tasks belong to a list and cascade when the list is deleted. `priority` defaults
 
 A task can be assigned to more than one participant. The composite unique `(task_id, user_id)` prevents duplicate assignment rows. Deleting a task or a user cascades its pivot rows. Application validation must ensure every assignee is the list owner or a current active member, and Form Requests reject duplicate ids in one request.
 
+The current `assignee_id` column is the legacy single-assignee schema. SRS-027 changes the target contract to multiple assignees, but its backend migration is not implemented yet. The SRS-027 implementation must introduce a `task_assignees` pivot with a unique `(task_id, user_id)` key, migrate or intentionally reset existing assignments, update model relationships/factories/seed data, and only then remove `tasks.assignee_id`. Until that migration and the task endpoints land, the React multiple-assignee screens remain API-ready rather than end-to-end functional.
+
 ## Enumerated contracts
 
 Values are stored as bounded strings and cast to PHP backed enums:
@@ -108,9 +110,9 @@ String columns keep status evolution migration-friendly; Form Requests and enums
 | Task list memberships | Cascade |
 | Task list tasks | Cascade (including their `task_assignees` rows) |
 | Task assignments (task deleted) | Cascade |
-| Planned admin account deletion (SRS-028) | Strategy open in ADR-011; must be atomic and leave no broken relations |
+| Admin account deletion (SRS-028, ADR-011) | Logical: status transitions to `DISABLED`; all rows and history preserved |
 
-Hard user deletion is not an ordinary product action today; accounts are disabled to preserve ownership and audit context. SRS-028 introduces administrator-initiated deletion whose strategy (hard delete, soft delete, or disable-only) is the open decision ADR-011.
+Hard user deletion remains prohibited; accounts are disabled to preserve ownership and audit context. Administrator-initiated account removal (SRS-028) is implemented as logical deletion — `DELETE /api/admin/users/{user}` transitions the account to `DISABLED` while every relational record is preserved (decided in ADR-011).
 
 ## Atomic transactions
 
@@ -122,6 +124,6 @@ Every multi-record operation runs inside one database transaction and rolls back
 | Create task with assignees | Task row + all `task_assignees` rows |
 | Change assignee set | Diff of `task_assignees` insert/delete rows |
 | Remove member (owner) | `list_members` row + that member's `task_assignees` rows for tasks in the same list |
-| Delete user account (planned, SRS-028) | User row plus owned lists, memberships, and assignments per ADR-011 |
+| Logical-delete user account (SRS-028, ADR-011) | Status transition to `DISABLED`; relational history preserved |
 
 Automated rollback tests must prove that a forced mid-operation failure leaves the database unchanged (see [TESTING.md](TESTING.md)).

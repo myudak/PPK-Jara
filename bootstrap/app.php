@@ -58,7 +58,11 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(function (NotFoundHttpException $exception, Request $request) {
             if ($request->is('api/*')) {
-                return ApiResponse::error('Endpoint not found.', 404);
+                $message = $exception->getPrevious() instanceof ModelNotFoundException
+                    ? 'Resource not found.'
+                    : 'Endpoint not found.';
+
+                return ApiResponse::error($message, 404);
             }
         });
     })->create();

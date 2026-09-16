@@ -1,6 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
 import { useAuth } from '@/features/auth/AuthContext';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function ProtectedRoute() {
     const { user, isLoading } = useAuth();
@@ -8,9 +9,9 @@ export function ProtectedRoute() {
 
     if (isLoading) {
         return (
-            <main className="route-state" aria-live="polite">
-                <span className="loader" aria-hidden="true" />
-                <p>Restoring your workspace…</p>
+            <main className="grid min-h-screen place-content-center gap-4" aria-live="polite">
+                <Skeleton className="mx-auto size-10 rounded-full" />
+                <p className="text-sm text-muted-foreground">Restoring your workspace...</p>
             </main>
         );
     }

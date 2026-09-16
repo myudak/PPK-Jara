@@ -108,8 +108,9 @@ Priority accepts `LOW`, `MEDIUM`, or `HIGH` and defaults to `MEDIUM`. Status acc
 | `GET` | `/api/admin/users` | Required | Admin + active account |
 | `POST` | `/api/admin/users` | Required | Admin + active account |
 | `PATCH` | `/api/admin/users/{user}` | Required | Admin + active account |
+| `DELETE` | `/api/admin/users/{user}` | Required | Admin + active account |
 
-Account disabling is represented by `PATCH /api/admin/users/{user}` with `status: "DISABLED"`; no hard-delete endpoint is planned.
+Account disabling is represented by `PATCH /api/admin/users/{user}` with `status: "DISABLED"`. `DELETE /api/admin/users/{user}` performs an idempotent logical deletion (SRS-028): it transitions the account to `DISABLED` and never removes the user row or historical ownership, membership, and assignment records. Only active administrators may delete, an administrator cannot delete their own account, and `PATCH` remains available to reactivate a disabled account.
 
 `GET /api/admin/users?page=1` returns users ordered by name with pagination metadata:
 

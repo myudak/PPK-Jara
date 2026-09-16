@@ -1,55 +1,80 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
-import { MemberPanel } from '@/features/lists/MemberPanel';
-import { deleteList, fetchList, fetchMembers, updateList } from '@/features/lists/api';
-import { EmptyState } from '@/components/shared/EmptyState';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/features/auth/AuthContext';
-import { TaskBoard } from '@/features/tasks/TaskBoard';
+import {
+    addMember,
+    deleteList,
+    deleteTask,
+    fetchList,
+    fetchMembers,
+    fetchTasks,
+    removeMember,
+    updateTask,
+} from '@/features/workspace/api';
+import { ListFormDialog } from '@/features/workspace/ListFormDialog';
+import { ListWorkspaceHeader } from '@/features/workspace/ListWorkspaceHeader';
+import { PeopleCard } from '@/features/workspace/PeopleCard';
+import { TaskFormDialog } from '@/features/workspace/TaskFormDialog';
+import { TaskSection } from '@/features/workspace/TaskSection';
 import { getApiErrorMessage } from '@/lib/api';
-import type { ListMember, TaskList } from '@/types/domain';
+import { cn } from '@/lib/utils';
+import type { ListMember, Task, TaskList, TaskStatus } from '@/types/domain';
 
 export function ListDetailPage() {
     const { id } = useParams();
+
+    return <ListDetailWorkspace key={id ?? 'invalid-list'} id={id} />;
+}
+
+interface ListDetailWorkspaceProps {
+    id?: string;
+}
+
+function ListDetailWorkspace({ id }: ListDetailWorkspaceProps) {
+    const listId = Number(id);
+    const isValidListId = Number.isInteger(listId) && listId > 0;
     const navigate = useNavigate();
     const { user } = useAuth();
-
-    const listId = Number(id);
-    const isValidId = Number.isInteger(listId) && listId > 0;
-
     const [list, setList] = useState<TaskList | null>(null);
     const [members, setMembers] = useState<ListMember[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    const [isEditing, setIsEditing] = useState(false);
-    const [name, setName] = useState('');
-    const [description, setDescription] = useState('');
-    const [isSaving, setIsSaving] = useState(false);
-    const [saveError, setSaveError] = useState<string | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
+    const [tasks, setTasks] = useState<Task[]>([]);
+    const [isLoading, setIsLoading] = useState(isValidListId);
+    const [loadError, setLoadError] = useState<string | null>(null);
+    const [actionError, setActionError] = useState<string | null>(null);
+    const [reloadToken, setReloadToken] = useState(0);
+    const [editingList, setEditingList] = useState(false);
+    const [taskForm, setTaskForm] = useState<Task | 'new' | null>(null);
+    const [isAddingMember, setIsAddingMember] = useState(false);
+    const [isDeletingList, setIsDeletingList] = useState(false);
+    const [pendingTaskIds, setPendingTaskIds] = useState<Set<number>>(() => new Set());
+    const [pendingMemberIds, setPendingMemberIds] = useState<Set<number>>(() => new Set());
+    const pendingTaskIdsRef = useRef(new Set<number>());
+    const pendingMemberIdsRef = useRef(new Set<number>());
 
     useEffect(() => {
-        if (!isValidId) {
+        let isCurrent = true;
+
+        if (!isValidListId) {
             return;
         }
 
-        let isCurrent = true;
-
-        Promise.all([fetchList(listId), fetchMembers(listId)])
-            .then(([listData, memberData]) => {
+        Promise.all([fetchList(listId), fetchMembers(listId), fetchTasks(listId)])
+            .then(([loadedList, loadedMembers, loadedTasks]) => {
                 if (!isCurrent) {
                     return;
                 }
-                setList(listData);
-                setMembers(memberData);
-                setName(listData.name);
-                setDescription(listData.description ?? '');
-                setError(null);
+                setList(loadedList);
+                setMembers(loadedMembers);
+                setTasks(loadedTasks);
+                setLoadError(null);
             })
             .catch((requestError: unknown) => {
                 if (isCurrent) {
-                    setError(getApiErrorMessage(requestError));
+                    setLoadError(getApiErrorMessage(requestError));
                 }
             })
             .finally(() => {
@@ -61,190 +86,243 @@ export function ListDetailPage() {
         return () => {
             isCurrent = false;
         };
-    }, [isValidId, listId]);
+    }, [isValidListId, listId, reloadToken]);
 
-    async function handleSave(event: FormEvent<HTMLFormElement>) {
-        event.preventDefault();
+    const handleAddMember = async (userId: number): Promise<boolean> => {
+        const targetListId = listId;
+        if (pendingMemberIdsRef.current.has(userId)) {
+            return false;
+        }
+        pendingMemberIdsRef.current.add(userId);
+        setPendingMemberIds(new Set(pendingMemberIdsRef.current));
+        setActionError(null);
+        setIsAddingMember(true);
+        try {
+            const member = await addMember(targetListId, userId);
+            setMembers((current) => [...current, member]);
+            return true;
+        } catch (requestError: unknown) {
+            setActionError(getApiErrorMessage(requestError));
+            return false;
+        } finally {
+            pendingMemberIdsRef.current.delete(userId);
+            setPendingMemberIds(new Set(pendingMemberIdsRef.current));
+            setIsAddingMember(false);
+        }
+    };
+
+    const handleRemoveMember = async (member: ListMember) => {
+        const targetListId = listId;
+        if (pendingMemberIdsRef.current.has(member.user_id)) {
+            return;
+        }
+        pendingMemberIdsRef.current.add(member.user_id);
+        setPendingMemberIds(new Set(pendingMemberIdsRef.current));
+        setActionError(null);
+        try {
+            await removeMember(targetListId, member.user_id);
+            setMembers((current) => current.filter((item) => item.user_id !== member.user_id));
+            setTasks((current) =>
+                current.map((task) => ({
+                    ...task,
+                    assignee_ids: task.assignee_ids.filter((userId) => userId !== member.user_id),
+                    assignees: task.assignees?.filter((assignee) => assignee.id !== member.user_id),
+                })),
+            );
+        } catch (requestError: unknown) {
+            setActionError(getApiErrorMessage(requestError));
+        } finally {
+            pendingMemberIdsRef.current.delete(member.user_id);
+            setPendingMemberIds(new Set(pendingMemberIdsRef.current));
+        }
+    };
+
+    const handleDeleteList = async () => {
         if (list === null) {
             return;
         }
 
-        setSaveError(null);
-        setIsSaving(true);
-
-        try {
-            const updated = await updateList(list.id, {
-                name,
-                description: description.trim() === '' ? null : description,
-            });
-            setList(updated);
-            setIsEditing(false);
-        } catch (requestError: unknown) {
-            setSaveError(getApiErrorMessage(requestError));
-        } finally {
-            setIsSaving(false);
-        }
-    }
-
-    async function reloadList() {
-        setIsLoading(true);
-
-        try {
-            const [listData, memberData] = await Promise.all([
-                fetchList(listId),
-                fetchMembers(listId),
-            ]);
-            setList(listData);
-            setMembers(memberData);
-            setName(listData.name);
-            setDescription(listData.description ?? '');
-            setError(null);
-        } catch (requestError: unknown) {
-            setError(getApiErrorMessage(requestError));
-        } finally {
-            setIsLoading(false);
-        }
-    }
-
-    async function handleDelete() {
-        if (list === null) {
-            return;
-        }
-
-        if (!window.confirm(`Delete "${list.name}"? Its members and tasks will be removed.`)) {
-            return;
-        }
-
-        setIsDeleting(true);
-
+        setActionError(null);
+        setIsDeletingList(true);
         try {
             await deleteList(list.id);
             void navigate('/dashboard');
         } catch (requestError: unknown) {
-            setIsDeleting(false);
-            setSaveError(getApiErrorMessage(requestError));
+            setActionError(getApiErrorMessage(requestError));
+            setIsDeletingList(false);
         }
-    }
+    };
 
-    const invalidMessage = isValidId ? null : 'This task list does not exist.';
+    const handleStatusChange = async (task: Task, status: TaskStatus) => {
+        if (pendingTaskIdsRef.current.has(task.id)) {
+            return;
+        }
+        pendingTaskIdsRef.current.add(task.id);
+        setPendingTaskIds(new Set(pendingTaskIdsRef.current));
+        setActionError(null);
+        try {
+            const updated = await updateTask(task.id, { status });
+            setTasks((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+        } catch (requestError: unknown) {
+            setActionError(getApiErrorMessage(requestError));
+        } finally {
+            pendingTaskIdsRef.current.delete(task.id);
+            setPendingTaskIds(new Set(pendingTaskIdsRef.current));
+        }
+    };
 
-    if (invalidMessage !== null) {
-        return (
-            <div className="page-stack">
-                <div role="alert" className="action-card">
-                    <h2>List unavailable.</h2>
-                    <p>{invalidMessage}</p>
-                    <Link to="/dashboard" className="primary-button">
-                        Back to dashboard
-                    </Link>
-                </div>
-            </div>
-        );
-    }
+    const handleDeleteTask = async (task: Task) => {
+        if (pendingTaskIdsRef.current.has(task.id)) {
+            return;
+        }
+        pendingTaskIdsRef.current.add(task.id);
+        setPendingTaskIds(new Set(pendingTaskIdsRef.current));
+        setActionError(null);
+        try {
+            await deleteTask(task.id);
+            setTasks((current) => current.filter((item) => item.id !== task.id));
+        } catch (requestError: unknown) {
+            setActionError(getApiErrorMessage(requestError));
+        } finally {
+            pendingTaskIdsRef.current.delete(task.id);
+            setPendingTaskIds(new Set(pendingTaskIdsRef.current));
+        }
+    };
 
     if (isLoading) {
         return (
-            <div className="page-stack">
-                <div role="status" className="loader" aria-label="Loading task list" />
-            </div>
-        );
-    }
-
-    if (error || list === null) {
-        return (
-            <div className="page-stack">
-                <div role="alert" className="action-card">
-                    <h2>List unavailable.</h2>
-                    <p>{error ?? 'This task list could not be loaded.'}</p>
-                    <Link to="/dashboard" className="primary-button">
-                        Back to dashboard
-                    </Link>
+            <div className="grid gap-6" aria-label="Loading list workspace" aria-busy="true">
+                <Skeleton className="h-24 w-full" />
+                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
+                    <Skeleton className="h-80 w-full" />
+                    <Skeleton className="h-80 w-full" />
                 </div>
             </div>
         );
     }
 
-    const isOwner = user !== null && user.id === list.owner_id;
+    if (!isValidListId || loadError !== null || list === null) {
+        return (
+            <Alert variant="destructive">
+                <AlertTitle>Could not load this workspace</AlertTitle>
+                <AlertDescription className="grid gap-3">
+                    <span>
+                        {!isValidListId
+                            ? 'This list URL is invalid.'
+                            : (loadError ?? 'The list was not returned by the server.')}
+                    </span>
+                    <div className="flex gap-2">
+                        <Link
+                            to="/dashboard"
+                            className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+                        >
+                            Back to dashboard
+                        </Link>
+                        {isValidListId && (
+                            <Button
+                                size="sm"
+                                onClick={() => {
+                                    setLoadError(null);
+                                    setIsLoading(true);
+                                    setReloadToken((token) => token + 1);
+                                }}
+                            >
+                                Try again
+                            </Button>
+                        )}
+                    </div>
+                </AlertDescription>
+            </Alert>
+        );
+    }
+
+    const isOwner = list.owner_id === user?.id;
+    const completedCount = tasks.filter((task) => task.status === 'COMPLETED').length;
+    const participantMap = new Map<number, string>();
+    participantMap.set(
+        list.owner_id,
+        list.owner?.name ?? (isOwner && user !== null ? user.name : `User #${list.owner_id}`),
+    );
+    for (const member of members) {
+        participantMap.set(member.user_id, member.user?.name ?? `User #${member.user_id}`);
+    }
+    const participants = [...participantMap].map(([participantId, name]) => ({
+        id: participantId,
+        name,
+    }));
 
     return (
-        <div className="page-stack">
-            <header className="page-header">
-                <div>
-                    <p className="eyebrow">{isOwner ? 'You own this list' : 'Shared with you'}</p>
-                    <h1>{list.name}</h1>
-                </div>
-                {isOwner && (
-                    <div className="header-actions">
-                        <button
-                            type="button"
-                            className="primary-button"
-                            onClick={() => setIsEditing((current) => !current)}
-                        >
-                            {isEditing ? 'Close editor' : 'Edit details'}
-                        </button>
-                        <button
-                            type="button"
-                            className="danger-button"
-                            onClick={() => void handleDelete()}
-                            disabled={isDeleting}
-                        >
-                            {isDeleting ? 'Deleting…' : 'Delete list'}
-                        </button>
-                    </div>
-                )}
-            </header>
-            <section className="action-card" aria-label="List details">
-                {isEditing ? (
-                    <form onSubmit={(event) => void handleSave(event)}>
-                        <h2>Edit details</h2>
-                        <label htmlFor="detail-name">Name</label>
-                        <input
-                            id="detail-name"
-                            required
-                            maxLength={255}
-                            value={name}
-                            onChange={(event) => setName(event.target.value)}
-                            disabled={isSaving}
-                        />
-                        <label htmlFor="detail-description">Description (optional)</label>
-                        <input
-                            id="detail-description"
-                            maxLength={2000}
-                            value={description}
-                            onChange={(event) => setDescription(event.target.value)}
-                            disabled={isSaving}
-                        />
-                        {saveError && (
-                            <p role="alert" className="form-error">
-                                {saveError}
-                            </p>
-                        )}
-                        <button type="submit" className="primary-button" disabled={isSaving}>
-                            {isSaving ? 'Saving…' : 'Save changes'}
-                        </button>
-                    </form>
-                ) : (
-                    <>
-                        <h2>{list.name}</h2>
-                        <p>{list.description ?? 'No description yet.'}</p>
-                    </>
-                )}
-            </section>
-
-            <MemberPanel
-                listId={list.id}
-                members={members}
+        <div className="grid gap-6">
+            <ListWorkspaceHeader
+                list={list}
                 isOwner={isOwner}
-                onChanged={() => void reloadList()}
+                completedCount={completedCount}
+                taskCount={tasks.length}
+                isDeleting={isDeletingList}
+                onCreateTask={() => setTaskForm('new')}
+                onEditList={() => setEditingList(true)}
+                onDeleteList={handleDeleteList}
             />
 
-            <TaskBoard listId={String(list.id)} />
+            {actionError !== null && (
+                <Alert variant="destructive">
+                    <AlertTitle>Action failed</AlertTitle>
+                    <AlertDescription>{actionError}</AlertDescription>
+                </Alert>
+            )}
 
-            {!isOwner && (
-                <EmptyState
-                    eyebrow="Read only"
-                    title="Only the owner can change this list."
-                    description="You can view the list and its members, and participate once tasks land here."
+            <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+                <TaskSection
+                    key={`tasks-${listId}`}
+                    tasks={tasks}
+                    pendingTaskIds={pendingTaskIds}
+                    onCreate={() => setTaskForm('new')}
+                    onEdit={setTaskForm}
+                    onStatusChange={handleStatusChange}
+                    onDelete={handleDeleteTask}
+                />
+                <PeopleCard
+                    key={`people-${listId}`}
+                    ownerName={
+                        list.owner?.name ??
+                        (isOwner && user !== null ? user.name : `User #${list.owner_id}`)
+                    }
+                    members={members}
+                    isOwner={isOwner}
+                    isAddingMember={isAddingMember}
+                    pendingMemberIds={pendingMemberIds}
+                    onAddMember={handleAddMember}
+                    onRemoveMember={handleRemoveMember}
+                    onValidationError={setActionError}
+                />
+            </div>
+
+            {editingList && (
+                <ListFormDialog
+                    list={list}
+                    onClose={() => setEditingList(false)}
+                    onSaved={(updated) => {
+                        setList(updated);
+                        setEditingList(false);
+                    }}
+                />
+            )}
+
+            {taskForm !== null && (
+                <TaskFormDialog
+                    list={list}
+                    task={taskForm === 'new' ? undefined : taskForm}
+                    participants={participants}
+                    onClose={() => setTaskForm(null)}
+                    onSaved={(saved) => {
+                        setTasks((current) => {
+                            const exists = current.some((task) => task.id === saved.id);
+                            return exists
+                                ? current.map((task) => (task.id === saved.id ? saved : task))
+                                : [saved, ...current];
+                        });
+                        setTaskForm(null);
+                    }}
                 />
             )}
         </div>

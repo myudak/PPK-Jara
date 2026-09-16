@@ -76,6 +76,8 @@ Lightweight ADRs record decisions that affect multiple modules. Add a dated entr
 
 > **Update 2026-09-16:** List, membership, task, progress, and admin-user endpoints are now implemented. ADR-009's boundary applied only to the initial scaffold; see API.md for current endpoint status.
 
+> **Amendment 2026-09-16 (PR #15):** The admin API exposes `DELETE /api/admin/users/{user}` as the user-facing delete action, but implements it as an idempotent transition to `DISABLED` (see ADR-011). Physical deletion remains prohibited.
+
 ## ADR-010 — Many-to-many task assignees
 
 **Status:** Accepted
@@ -86,15 +88,11 @@ Lightweight ADRs record decisions that affect multiple modules. Add a dated entr
 
 ## ADR-011 — Account deletion strategy
 
-**Status:** Open decision — requires stakeholder approval (SRS-028)
+**Status:** Accepted — decided 2026-09-16, implemented and tested in PR #15 (SRS-028)
 
-**Decision:** Not yet made. Until stakeholders choose, the deletion strategy for `DELETE /api/admin/users/{user}` is unresolved among:
+**Decision:** Administrator account deletion is **logical deletion**. `DELETE /api/admin/users/{user}` performs an idempotent transition of the account status to `DISABLED`. It never removes the user row or historical ownership, membership, and assignment records. Constraints that carried over from the open decision: only active administrators may delete; an administrator cannot delete their own account; no orphaned foreign keys; response uses the standard envelope.
 
-1. **Hard delete** — remove the user row and all owned lists, memberships, and assignments in one transaction. Simplest, but destroys collaborative history.
-2. **Soft delete** — mark the user deleted (for example `deleted_at`), keep rows for audit, exclude the user from authentication and directory queries. Preserves history, but every consumer must filter deleted users and ownership references require explicit handling.
-3. **Disable only** — keep the current `ACTIVE`/`DISABLED` lifecycle (ADR-003) and document that "delete" means disable; SRS-028 is then not marked superseding SRS-021.
-
-**Constraints regardless of choice:** only active administrators may delete; an administrator cannot delete their own account; no orphaned foreign keys; all relational changes run in one transaction; response uses the standard envelope. When decided, record the outcome here, update SRS-021/SRS-028 supersession notes, DATABASE.md deletion behavior, and API.md.
+**Reason:** SRS-028 requires removing access without destroying collaborative history. Logical deletion reuses the existing `ACTIVE`/`DISABLED` lifecycle (ADR-003), satisfies all SRS-028 acceptance criteria (user, lists, memberships, tasks, and assignments remain stored; deleted accounts cannot log in or access protected endpoints), and was chosen, implemented, and tested in PR #15 by the account-domain owner, closing the previously open stakeholder decision.
 
 ## ADR-012 — Atomic multi-record operations
 

@@ -63,10 +63,10 @@ Run one backend test file with `php artisan test tests/Feature/Auth/Authenticati
 - [ ] The public landing page at `/` opens without authentication and links to `/login`.
 - [ ] A logged-in user can reach the dashboard from the landing page.
 - [x] An administrator can list, create, edit, and disable users.
-- [ ] An administrator can delete a user account per the approved ADR-011 strategy (blocked until decided).
-- [ ] A normal user receives `403` on administrator endpoints/pages, including account deletion.
+- [x] An administrator can logically delete a user account per the approved ADR-011 strategy (status `DISABLED`, history preserved).
+- [x] A normal user receives `403` on administrator endpoints/pages, including account deletion.
 - [x] A disabled user cannot start or continue a session.
-- [ ] An administrator cannot disable, demote, or delete their own account via the admin page.
+- [x] An administrator cannot disable, demote, or delete their own account via the admin page.
 - [ ] UI is built on the shadcn preset `bhOibP160`; loading, empty, validation, and server-error states are understandable.
 
 Items for unimplemented domain features remain expected failures in manual acceptance until their milestone lands; do not add placeholder automated tests that pretend endpoints exist.

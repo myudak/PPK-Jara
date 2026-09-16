@@ -6,6 +6,7 @@ import { AdminDashboardPage } from '@/pages/AdminDashboardPage';
 import { AdminUsersPage } from '@/pages/AdminUsersPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { ListDetailPage } from '@/pages/ListDetailPage';
+import { LandingPage } from '@/pages/LandingPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { AdminRoute } from '@/routes/AdminRoute';
@@ -16,6 +17,7 @@ export function App() {
         <BrowserRouter>
             <AuthProvider>
                 <Routes>
+                    <Route path="/" element={<LandingPage />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route element={<ProtectedRoute />}>
                         <Route element={<AppLayout />}>

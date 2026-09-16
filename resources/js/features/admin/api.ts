@@ -45,3 +45,9 @@ export async function updateAdminUser(
 
     return response.data.data;
 }
+
+export async function deleteAdminUser(id: number): Promise<User> {
+    const response = await api.delete<ApiSuccess<User>>(`/api/admin/users/${id}`);
+
+    return response.data.data;
+}
