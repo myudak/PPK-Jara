@@ -51,6 +51,99 @@ Sebagai administrator, saya ingin mengelola serta menonaktifkan akun pengguna ag
 
 MVP tidak mencakup registrasi publik, lupa password, notifikasi, komentar tugas, lampiran file, recurring task, real-time update, kalender eksternal, maupun penghapusan permanen akun pengguna. Istilah “hapus akun” pada ruang lingkup JARA berarti menonaktifkan akun (`DISABLED`) agar riwayat tugas dan kolaborasi tetap tersimpan. Penambahan fitur di luar daftar SRS harus dibahas sebagai perubahan scope.
 
+## Diagram Ringkas
+
+### Peran dan Modul
+
+```mermaid
+flowchart LR
+    U(["👤 Pengguna"])
+    O(["👑 Pemilik Daftar"])
+    A(["🛠️ Administrator"])
+
+    subgraph AUTH [Autentikasi & Akun — SRS-002..005]
+        F1["Login / Session / Logout\nAkun DISABLED ditolak"]
+    end
+
+    subgraph LIST [Workspace Daftar — SRS-006..010]
+        F2["Lihat / buat / ubah / hapus daftar\nKelola anggota (owner saja)"]
+    end
+
+    subgraph TASK [Tugas — SRS-011..017, SRS-027]
+        F3["CRUD tugas, status + completed_at,\ntanggal & prioritas\nMulti-assignee pada pivot task_assignees"]
+    end
+
+    subgraph PROG [Progres — SRS-018]
+        F4["% tugas COMPLETED"]
+    end
+
+    subgraph ADMIN [Admin Users — SRS-019..021]
+        F5["Lihat / buat / ubah / nonaktifkan akun"]
+    end
+
+    CROSS ["Kontrol akses &amp; envelope API — SRS-022, SRS-023"]
+
+    U --> F1
+    U --> F2
+    U --> F3
+    O --> F2
+    O --> F3
+    O --> F4
+    A --> F1
+    A --> F5
+    F1 -.-> CROSS
+    F2 -.-> CROSS
+    F3 -.-> CROSS
+    F4 -.-> CROSS
+    F5 -.-> CROSS
+```
+
+### Model Data Inti
+
+```mermaid
+erDiagram
+    USERS ||--o{ TASK_LISTS : "memiliki (owner)"
+    USERS ||--o{ LIST_MEMBERS : "berpartisipasi"
+    TASK_LISTS ||--o{ LIST_MEMBERS : ""
+    TASK_LISTS ||--o{ TASKS : ""
+    TASKS ||--o{ TASK_ASSIGNEES : ""
+    USERS ||--o{ TASK_ASSIGNEES : "ditugaskan"
+
+    USERS {
+        bigint id PK
+        string username UK
+        string email UK
+        string password_hash
+        enum role "USER | ADMIN"
+        enum status "ACTIVE | DISABLED"
+    }
+    TASK_LISTS {
+        bigint id PK
+        bigint owner_id FK "owner = peserta implisit"
+        string name
+        text description
+    }
+    LIST_MEMBERS {
+        bigint task_list_id FK "UK: list + user"
+        bigint user_id FK
+        timestamp joined_at
+    }
+    TASKS {
+        bigint id PK
+        bigint task_list_id FK "cascade delete"
+        string title
+        enum status "TODO | IN_PROGRESS | COMPLETED"
+        enum priority "LOW | MEDIUM | HIGH"
+        date start_date
+        date due_date ">= start_date"
+        timestamp completed_at
+    }
+    TASK_ASSIGNEES {
+        bigint task_id FK "UK: task + user"
+        bigint user_id FK "owner/anggota aktif daftar"
+    }
+```
+
 ## Catatan Implementasi Saat Ini
 
 Fondasi, autentikasi, skema database, policy, route frontend, seed data, dan quality tooling sudah tersedia. Endpoint list, membership, dan UI kolaborasinya sudah diimplementasikan; task, progress, dan admin-user masih berstatus planned; status endpoint aktual dicatat di [API.md](API.md).
