@@ -30,10 +30,16 @@ Laravel and React live in one repository and deploy as one web application. Lara
 | --- | --- | --- |
 | Auth/User | Sessions, identity, role/status, user lifecycle | Shared API envelope |
 | List/Membership | List ownership, membership, list visibility | Authenticated user identity |
-| Task | Tasks, assignment, status, progress | List access and membership |
-| Admin | User management and disabling | User identity and admin middleware |
+| Task | Tasks, multiple assignment, status, progress | List access and membership |
+| Admin | User management, disabling, account deletion (planned, SRS-028) | User identity and admin middleware |
+| Design system | shadcn components with preset `bhOibP160` (SRS-031) | React, Tailwind via preset |
+| Landing | Public landing page at `/` (SRS-032) | Design system, auth state for dashboard link |
 
 Cross-module values and endpoint shapes are contracts. Change them with coordinated code, documentation, and tests.
+
+## Transaction and data-integrity boundaries
+
+Multi-record operations run inside one database transaction so a failure at any step rolls back the whole operation (SRS-029, ADR-012): list deletion with its tasks, memberships, and assignments; task creation and assignee-set changes with multiple assignees; member removal with related assignment cleanup; and the planned account deletion. All queries use Eloquent, the Query Builder, or parameter binding — never string-interpolated raw SQL (SRS-030, ADR-013).
 
 ## Authentication flow
 
@@ -52,6 +58,12 @@ The list owner is an implicit participant and is not duplicated in `list_members
 ## Frontend organization
 
 Shared layout and UI live in `components`/`layouts`; domain-specific logic lives in `features`; API configuration lives in `lib`; URL-level composition lives in `pages` and `routes`; transport/domain shapes live in `types`. New abstractions require repeated use, not anticipated reuse.
+
+Every feature (auth, admin, lists, members, tasks, assignment, progress) must be reachable through an integrated React interface (SRS-026). All UI is built on the shadcn design system configured with preset `bhOibP160` (SRS-031, ADR-014); custom CSS is allowed only for layout or visual identity not available as a shadcn component. Asynchronous operations always expose loading, empty, success, and error states.
+
+## Route separation
+
+Public routes render without authentication; protected routes sit behind `ProtectedRoute` and admin routes behind `AdminRoute`. The public landing page lives at `/` (SRS-032, ADR-015): it is reachable without a session, links to `/login`, and offers a dashboard link to logged-in users. `/` previously fell into the catch-all not-found route; the landing page replaces that behavior for the exact `/` path only.
 
 ## Deployment shape
 

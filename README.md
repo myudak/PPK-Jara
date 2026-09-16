@@ -3,22 +3,27 @@
 ![alt text](image.png)
 ![alt text](image-1.png)
 ![alt text](image-2.png)
-JARA is a Laravel and React web application for managing personal and collaborative task lists. This repository currently provides the production-oriented engineering foundation for a four-person team; it intentionally does not implement the complete product.
+JARA is a Laravel and React web application for managing personal and collaborative task lists. This repository provides the production-oriented engineering foundation for a four-person team and implements most of the product; remaining scope is tracked in the SRS.
 
 ## What JARA will support
 
-- Account login and administrator-managed users
+- Account login and administrator-managed users, including administrator account deletion (SRS-028, deletion strategy open in ADR-011)
+- A public landing page at `/` with a CTA to `/login` (SRS-032)
 - Personal and shared task lists
 - List membership and collaboration
-- Tasks, assignments, dates, deadlines, and status tracking
+- Tasks with multiple assignees (`assignee_ids` / `task_assignees` pivot, SRS-027), dates, deadlines, and status tracking
 - List-level progress monitoring
 - Ownership, membership, and administrator authorization
+- Atomic multi-record operations with full rollback (SRS-029)
+- Validated inputs and parameterized queries (SRS-030)
+- A React UI built on the shadcn design system, preset `bhOibP160` (SRS-031)
 
 ## Technology
 
 - Laravel 13, PHP 8.3+, Eloquent, migrations, validation, and Policies
 - Laravel Sanctum cookie-based SPA authentication
 - React 19, TypeScript, React Router, Axios, and Vite
+- shadcn design system configured with preset `bhOibP160` (SRS-031)
 - MySQL 8 for application data
 - PHPUnit, Vitest, Testing Library, ESLint, Prettier, and Laravel Pint
 
@@ -101,8 +106,20 @@ Implemented endpoints:
 | `GET`/`POST` | `/api/lists` | List accessible lists; create a list |
 | `GET`/`PATCH`/`DELETE` | `/api/lists/{list}` | List detail; owner-only edit and delete |
 | `GET`/`POST`/`DELETE` | `/api/lists/{list}/members` | Membership management |
+| `GET`/`POST` | `/api/lists/{list}/tasks` | List tasks; task creation |
+| `GET`/`PATCH`/`DELETE` | `/api/tasks/{task}` | Task detail, update, delete |
+| `GET` | `/api/lists/{list}/progress` | List progress summary |
+| `GET`/`POST` | `/api/admin/users` | User directory; user creation |
+| `PATCH` | `/api/admin/users/{user}` | Edit or disable a user |
 
-Task and admin-user endpoints are documented contracts but are intentionally not implemented yet. See [API documentation](docs/API.md).
+Planned (documented contract, not implemented — do not use before it ships):
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `DELETE` | `/api/admin/users/{user}` | Administrator deletes a user account (SRS-028; blocked on the ADR-011 deletion-strategy decision) |
+| `assignee_ids` task input / `assignees` in task responses | task endpoints | Multiple assignees via the `task_assignees` pivot (SRS-027; current API still uses single `assignee_id`) |
+
+See [API documentation](docs/API.md) for the authoritative endpoint status.
 
 ## Quality checks
 
@@ -163,22 +180,22 @@ Use Conventional Commits such as `feat(lists): add membership endpoint` or `fix(
 
 | Owner | Domains |
 | --- | --- |
-| Muchammad Yuda Tri Ananda sebagai Project Manager | Architecture, integration, review, merge, deployment, cross-module fixes, documentation |
-| Muhammad Zaidaan Ardiyansyah (24060124140200) | Authentication, users, administration |
-| Nayla Husna (24060124140158) | Task lists, membership, collaboration |
-| Muhammad Hafidh Zufar Dewantara (24060124140164) | Tasks, assignment, priority, progress |
+| Nayla Husna (24060124140158) sebagai Project Manager | Architecture, integration, review, merge, deployment, cross-module fixes, documentation; task lists, membership, collaboration (SRS-001, SRS-006-010, SRS-024-025) |
+| Muhammad Zaidaan Ardiyansyah (24060124140200) | Authentication, users, administration (SRS-002-005, SRS-019-023); frontend integration, shadcn design system, landing page, admin account deletion (SRS-026, SRS-028, SRS-031, SRS-032) |
+| Muhammad Hafidh Zufar Dewantara (24060124140164) | Tasks, assignment, priority, progress (SRS-011-018); multiple task assignees (SRS-027) |
+| Muchammad Yuda Tri Ananda | Database integrity and validation: atomic operations, rollback and injection tests (SRS-029, SRS-030) |
 
 Ownership clarifies responsibility; it does not permit unilateral changes to shared API, identity, status, or endpoint contracts.
 
 ## Current foundation and next work
 
-The repository includes authentication, schema, relationships, policies, seed data, consistent API envelopes, protected frontend routing, placeholder pages, and testing/linting configuration.
+The repository includes authentication, schema, relationships, policies, seed data, consistent API envelopes, task and progress endpoints, admin-user endpoints, protected frontend routing, and testing/linting configuration.
 
-Recommended first tasks:
+Recommended next tasks (2026-09-16 revision):
 
-1. Zaidaan: implement administrator user listing, creation, editing, and disabling behind the admin middleware.
-2. Nayla: implement authorized task-list CRUD and membership management with query scoping.
-3. Hafidh: implement task CRUD, priority, assignment validation, status transitions, and progress calculation.
+1. Yuda: wrap all multi-record operations in transactions, audit Form Requests, and add rollback plus SQL-injection test suites (SRS-029, SRS-030).
+2. Hafidh: ship the `task_assignees` pivot, `assignee_ids` input, `assignees` responses, and the multi-assignee UI (SRS-027).
+3. Zaidaan: configure shadcn preset `bhOibP160`, complete the React feature integration, and add the public landing page at `/` (SRS-031, SRS-026, SRS-032); then implement admin account deletion once the ADR-011 deletion strategy is approved (SRS-028).
 
 ## Documentation
 
