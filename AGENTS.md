@@ -50,7 +50,56 @@ Treat these as cross-team contracts:
 - Task priorities: `LOW`, `MEDIUM`, `HIGH`
 - The owner-as-implicit-list-participant rule
 
-Changing a shared contract requires updating affected backend and frontend code, updating the relevant document, running dependent-module tests, and calling out the change in the Pull Request.
+Changing a shared contract requires updating affected backend and frontend code, updating the relevant document, and calling out the change in the Pull Request. Run dependent-module tests when they are useful for the change; testing is not a mandatory contribution gate.
+
+## Git workflow
+
+- Do not work directly on `main`.
+- Start work from the latest `main` and create a focused branch for one coherent task.
+- Feature branches use `feat/<deskripsi-singkat>`.
+- Use a matching prefix when the work is clearly not a feature, for example `fix/`, `refactor/`, `docs/`, `test/`, or `chore/`.
+- Branch descriptions must be lowercase, use kebab-case, and be written in natural Indonesian.
+- Prefer names such as `feat/tambah-filter-tugas`, `fix/perbaiki-validasi-login`, or `docs/perbarui-panduan-api`.
+- Avoid vague names such as `update-code`, `final-fix`, `new-feature`, `my-branch`, or names based only on a developer.
+- Keep one branch focused on one task. Do not mix unrelated cleanup or features into the same branch.
+
+## Commit rules
+
+- Make commits atomic: one commit should represent one logical change that can be understood and reverted on its own.
+- Do not wait until the end and put unrelated work into one large commit.
+- Split feature work, unrelated refactors, documentation, formatting, and fixes when they are separate logical changes.
+- Stage only files or hunks that belong to the commit. Avoid blindly committing unrelated working-tree changes.
+- Use Conventional Commit prefixes when applicable: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `style`, or `perf`.
+- Write the commit summary in natural Indonesian. Keep it short and specific to what actually changed.
+- Good examples:
+  - `feat(tugas): tambah filter berdasarkan status`
+  - `fix(auth): perbaiki validasi akun nonaktif`
+  - `refactor(daftar): rapikan pengecekan anggota`
+  - `docs(api): perbarui contoh respons tugas`
+- Avoid generic or AI-sounding messages such as `implement seamless task management experience`, `enhance overall architecture`, `update various things`, or `final changes`.
+- Do not claim tests passed in a commit or PR unless they were actually run.
+
+## Writing style for repository work
+
+Anything written by an agent for this repository should sound like a real member of the team wrote it. This includes branch names, commit messages, Pull Request titles and descriptions, documentation, code comments, and user-facing copy.
+
+- Use natural Indonesian for branch names, commit summaries, and team-facing Git text unless an established technical term is clearer in English.
+- Be direct. Say what changed instead of dressing it up.
+- Avoid generic openings such as "In today's fast-paced world", "It is worth noting", or similar filler.
+- Avoid stock AI words such as `seamless`, `robust`, `crucial`, `comprehensive`, or `enhance` when a simpler and more specific phrase works.
+- Do not force symmetrical three-part lists, long formal transitions, or em dashes just to make prose look polished.
+- Prefer project-specific wording over generic corporate language.
+- Keep explanations proportional to the change. A small fix does not need an essay.
+- Do not invent motivation, test results, implementation details, or confidence that is not supported by the actual change.
+
+## Pull Requests
+
+- Open a focused Pull Request to `main` after the branch contains a coherent change.
+- Use a concise Conventional Commit-style title with a natural Indonesian summary when it fits, for example `feat(tugas): tambah filter dan pencarian tugas`.
+- Keep the description practical: explain what changed, any important behavior or contract impact, and anything reviewers should know.
+- Do not pad the description with generic summaries or AI-style prose.
+- Mention tests only when they were actually run. Testing is optional unless the task or reviewer explicitly requires it.
+- Do not merge without review.
 
 ## Laravel rules
 
@@ -78,9 +127,9 @@ Changing a shared contract requires updating affected backend and frontend code,
 ## Before completing work
 
 1. Read the relevant documents and inspect the implementation.
-2. Confirm scope and shared contracts.
+2. Confirm the scope and any shared contracts that could be affected.
 3. Implement the smallest coherent change.
-4. Run `composer lint` and relevant PHP tests.
-5. Run `npm run typecheck`, `npm run lint`, `npm run format:check`, relevant Vitest tests, and a production build for frontend changes.
-6. Review the diff for secrets, generated files, accidental contract changes, and missing documentation.
+4. Keep the work split into atomic commits with natural Indonesian commit summaries.
+5. Run lint, typecheck, tests, or a production build when they are useful for the change. They are not mandatory by default.
+6. Review the diff for secrets, generated files, unrelated changes, accidental contract changes, and missing documentation.
 7. Open a focused Pull Request to `main`; do not merge without review.
