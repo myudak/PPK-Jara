@@ -14,7 +14,7 @@ export interface TaskFormData {
     description: string;
     priority: TaskPriority;
     status: TaskStatus;
-    assignee_id: string;
+    assignee_ids: string[];
     start_date: string;
     due_date: string;
 }
@@ -35,7 +35,7 @@ function taskPayload(data: TaskFormData): Record<string, unknown> {
         description: data.description.trim() === '' ? null : data.description,
         priority: data.priority,
         status: data.status,
-        assignee_id: data.assignee_id === '' ? null : Number(data.assignee_id),
+        assignee_ids: data.assignee_ids.map(Number),
         start_date: data.start_date === '' ? null : data.start_date,
         due_date: data.due_date === '' ? null : data.due_date,
     };
@@ -61,7 +61,10 @@ export async function fetchProgress(listId: string): Promise<TaskProgress> {
 }
 
 export async function createTask(listId: string, data: TaskFormData): Promise<Task> {
-    const response = await api.post<ApiSuccess<Task>>(`/api/lists/${listId}/tasks`, taskPayload(data));
+    const response = await api.post<ApiSuccess<Task>>(
+        `/api/lists/${listId}/tasks`,
+        taskPayload(data),
+    );
 
     return response.data.data;
 }
@@ -76,7 +79,10 @@ export async function deleteTask(taskId: number): Promise<void> {
     await api.delete(`/api/tasks/${taskId}`);
 }
 
-export function extractFieldErrors(message: string, errors?: Record<string, string[]>): TaskFieldErrors {
+export function extractFieldErrors(
+    message: string,
+    errors?: Record<string, string[]>,
+): TaskFieldErrors {
     const fieldErrors: TaskFieldErrors = {};
 
     if (errors === undefined) {

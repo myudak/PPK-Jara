@@ -47,14 +47,19 @@ class DatabaseSeeder extends Seeder
             $users['user3@example.com']->id => ['joined_at' => now()],
         ]);
 
-        Task::query()->updateOrCreate(
+        $reviewTask = Task::query()->updateOrCreate(
             ['task_list_id' => $list->id, 'title' => 'Review the shared API contract'],
-            ['status' => TaskStatus::InProgress, 'assignee_id' => $users['user2@example.com']->id],
+            ['status' => TaskStatus::InProgress],
         );
+        $reviewTask->assignees()->sync([$users['user2@example.com']->id]);
 
-        Task::query()->updateOrCreate(
+        $demoTask = Task::query()->updateOrCreate(
             ['task_list_id' => $list->id, 'title' => 'Prepare milestone one demo'],
-            ['status' => TaskStatus::Todo, 'assignee_id' => $users['user3@example.com']->id],
+            ['status' => TaskStatus::Todo],
         );
+        $demoTask->assignees()->sync([
+            $users['user2@example.com']->id,
+            $users['user3@example.com']->id,
+        ]);
     }
 }

@@ -26,20 +26,47 @@ class DomainSchemaTest extends TestCase
         $list->members()->attach($member, ['joined_at' => now()]);
     }
 
-    public function test_list_deletion_cascades_and_assignee_deletion_sets_null(): void
+    public function test_task_assignment_cannot_be_duplicated(): void
+    {
+        $owner = User::factory()->create();
+        $assignee = User::factory()->create();
+        $list = TaskList::factory()->for($owner, 'owner')->create();
+        $task = Task::factory()->for($list)->create();
+
+        $task->assignees()->attach($assignee);
+
+        $this->expectException(QueryException::class);
+        $task->assignees()->attach($assignee);
+    }
+
+    public function test_list_deletion_cascades_tasks_and_assignments(): void
     {
         $owner = User::factory()->create();
         $assignee = User::factory()->create();
         $list = TaskList::factory()->for($owner, 'owner')->create();
         $list->members()->attach($assignee, ['joined_at' => now()]);
-        $task = Task::factory()->for($list)->create(['assignee_id' => $assignee->id]);
-
-        $assignee->delete();
-        $this->assertNull($task->fresh()?->assignee_id);
+        $task = Task::factory()->for($list)->create();
+        $task->assignees()->attach($assignee);
 
         $list->delete();
+
         $this->assertDatabaseMissing('tasks', ['id' => $task->id]);
         $this->assertSame(0, DB::table('list_members')->where('task_list_id', $list->id)->count());
+        $this->assertSame(0, DB::table('task_assignees')->where('task_id', $task->id)->count());
+    }
+
+    public function test_user_deletion_cascades_assignment_rows(): void
+    {
+        $owner = User::factory()->create();
+        $assignee = User::factory()->create();
+        $list = TaskList::factory()->for($owner, 'owner')->create();
+        $task = Task::factory()->for($list)->create();
+        $task->assignees()->attach($assignee);
+
+        $assignee->delete();
+
+        $this->assertSame(0, DB::table('task_assignees')->where('user_id', $assignee->id)->count());
+        $this->assertDatabaseHas('tasks', ['id' => $task->id]);
     }
 
     public function test_development_seeder_creates_documented_collaboration_fixture(): void

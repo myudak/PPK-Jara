@@ -28,11 +28,17 @@ export function TaskCard({ task, isBusy, onEdit, onDelete, onAdvanceStatus }: Ta
                     {overdue && <span className="badge badge-overdue">Overdue</span>}
                 </div>
             </header>
-            {task.description !== null && <p className="task-card-description">{task.description}</p>}
+            {task.description !== null && (
+                <p className="task-card-description">{task.description}</p>
+            )}
             <dl className="task-card-meta">
                 <div>
-                    <dt>Assignee</dt>
-                    <dd>{task.assignee?.name ?? 'Unassigned'}</dd>
+                    <dt>Assignees</dt>
+                    <dd>
+                        {task.assignees.length > 0
+                            ? task.assignees.map((user) => user.name).join(', ')
+                            : 'Unassigned'}
+                    </dd>
                 </div>
                 <div>
                     <dt>Start date</dt>
@@ -60,7 +66,12 @@ export function TaskCard({ task, isBusy, onEdit, onDelete, onAdvanceStatus }: Ta
                         {upcomingStatus === 'IN_PROGRESS' ? 'Start task' : 'Mark completed'}
                     </button>
                 )}
-                <button type="button" className="text-button" disabled={isBusy} onClick={() => onEdit(task)}>
+                <button
+                    type="button"
+                    className="text-button"
+                    disabled={isBusy}
+                    onClick={() => onEdit(task)}
+                >
                     Edit
                 </button>
                 <button

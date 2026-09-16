@@ -72,8 +72,10 @@ export function TaskBoard({ listId }: TaskBoardProps) {
         const participantMap = new Map<number, User>();
 
         for (const task of tasks) {
-            if (task.assignee !== undefined && !participantMap.has(task.assignee.id)) {
-                participantMap.set(task.assignee.id, task.assignee);
+            for (const assignee of task.assignees) {
+                if (!participantMap.has(assignee.id)) {
+                    participantMap.set(assignee.id, assignee);
+                }
             }
         }
 
@@ -92,7 +94,7 @@ export function TaskBoard({ listId }: TaskBoardProps) {
                     description: task.description ?? '',
                     priority: task.priority,
                     status,
-                    assignee_id: task.assignee_id === null ? '' : String(task.assignee_id),
+                    assignee_ids: task.assignees.map((user) => String(user.id)),
                     start_date: task.start_date ?? '',
                     due_date: task.due_date ?? '',
                 });
@@ -165,7 +167,10 @@ export function TaskBoard({ listId }: TaskBoardProps) {
                         aria-label={`${progress.completed} of ${progress.total} tasks completed`}
                     >
                         <div className="task-progress-bar">
-                            <div className="task-progress-fill" style={{ width: `${progress.percent}%` }} />
+                            <div
+                                className="task-progress-fill"
+                                style={{ width: `${progress.percent}%` }}
+                            />
                         </div>
                         <span className="task-progress-label">
                             {progress.completed}/{progress.total} completed ({progress.percent}%)
@@ -182,7 +187,9 @@ export function TaskBoard({ listId }: TaskBoardProps) {
                 <select
                     id="filter-priority"
                     value={filters.priority}
-                    onChange={(event) => setFilter('priority', event.target.value as TaskPriority | '')}
+                    onChange={(event) =>
+                        setFilter('priority', event.target.value as TaskPriority | '')
+                    }
                 >
                     <option value="">All priorities</option>
                     <option value="LOW">Low</option>
@@ -206,7 +213,9 @@ export function TaskBoard({ listId }: TaskBoardProps) {
                 <select
                     id="filter-sort"
                     value={filters.sort}
-                    onChange={(event) => setFilter('sort', event.target.value as TaskFilters['sort'])}
+                    onChange={(event) =>
+                        setFilter('sort', event.target.value as TaskFilters['sort'])
+                    }
                 >
                     <option value="id">Created</option>
                     <option value="priority">Priority</option>
@@ -216,7 +225,9 @@ export function TaskBoard({ listId }: TaskBoardProps) {
                 <button
                     type="button"
                     className="text-button"
-                    onClick={() => setFilter('direction', filters.direction === 'asc' ? 'desc' : 'asc')}
+                    onClick={() =>
+                        setFilter('direction', filters.direction === 'asc' ? 'desc' : 'asc')
+                    }
                 >
                     Direction: {filters.direction === 'asc' ? 'ascending' : 'descending'}
                 </button>
@@ -267,7 +278,9 @@ export function TaskBoard({ listId }: TaskBoardProps) {
                                 isBusy={busyTaskId === task.id}
                                 onEdit={openEditForm}
                                 onDelete={(taskCard) => void handleDelete(taskCard)}
-                                onAdvanceStatus={(taskCard, status) => void handleAdvanceStatus(taskCard, status)}
+                                onAdvanceStatus={(taskCard, status) =>
+                                    void handleAdvanceStatus(taskCard, status)
+                                }
                             />
                         </li>
                     ))}

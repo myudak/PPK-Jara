@@ -7,7 +7,6 @@ use App\Http\Requests\Lists\StoreListRequest;
 use App\Http\Requests\Lists\UpdateListRequest;
 use App\Http\Resources\ListMemberResource;
 use App\Http\Resources\TaskListResource;
-use App\Models\Task;
 use App\Models\TaskList;
 use App\Models\User;
 use App\Support\ApiResponse;
@@ -133,10 +132,10 @@ class TaskListController extends Controller
         }
 
         DB::transaction(function () use ($list, $member): void {
-            Task::query()
-                ->where('task_list_id', $list->id)
-                ->where('assignee_id', $member->id)
-                ->update(['assignee_id' => null]);
+            DB::table('task_assignees')
+                ->whereIn('task_id', $list->tasks()->select('id'))
+                ->where('user_id', $member->id)
+                ->delete();
 
             $list->members()->detach($member->id);
         });

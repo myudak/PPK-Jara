@@ -20,7 +20,7 @@ Menangani CRUD daftar/list/project, pembatasan daftar yang dapat dilihat, pengel
 
 ### Muhammad Hafidh Zufar Dewantara — 24060124140164
 
-**Fitur/SRS:** Tasks, Assignment, Priority, dan Progress — SRS-011 sampai SRS-018.
+**Fitur/SRS:** Tasks, Assignment, Priority, dan Progress — SRS-011 sampai SRS-018, serta SRS-027.
 
 Menangani CRUD tugas, validasi assignee, prioritas, tenggat waktu, status dan penyelesaian tugas, perhitungan progres, UI tugas, serta pengujiannya.
 

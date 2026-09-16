@@ -14,6 +14,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class TaskListTaskController extends Controller
 {
@@ -23,7 +24,7 @@ class TaskListTaskController extends Controller
     {
         $this->authorize('view', $list);
 
-        $query = $list->tasks()->with('assignee');
+        $query = $list->tasks()->with('assignees');
 
         if (is_string($priority = $request->query('priority')) && $this->isValidEnumValue($priority, TaskPriority::cases())) {
             $query->where('priority', $priority);
@@ -44,23 +45,28 @@ class TaskListTaskController extends Controller
 
         $data = $request->validated();
 
-        $task = $list->tasks()->create([
-            'title' => $data['title'],
-            'description' => $data['description'] ?? null,
-            'priority' => isset($data['priority']) ? TaskPriority::from($data['priority']) : TaskPriority::Medium,
-            'status' => isset($data['status']) ? TaskStatus::from($data['status']) : TaskStatus::Todo,
-            'assignee_id' => $data['assignee_id'] ?? null,
-            'start_date' => $data['start_date'] ?? null,
-            'due_date' => $data['due_date'] ?? null,
-        ]);
+        $task = DB::transaction(function () use ($list, $data): Task {
+            $task = $list->tasks()->create([
+                'title' => $data['title'],
+                'description' => $data['description'] ?? null,
+                'priority' => isset($data['priority']) ? TaskPriority::from($data['priority']) : TaskPriority::Medium,
+                'status' => isset($data['status']) ? TaskStatus::from($data['status']) : TaskStatus::Todo,
+                'start_date' => $data['start_date'] ?? null,
+                'due_date' => $data['due_date'] ?? null,
+            ]);
 
-        if ($task->status === TaskStatus::Completed) {
-            $task->completed_at = now();
-            $task->save();
-        }
+            $task->syncAssignees($data['assignee_ids'] ?? []);
+
+            if ($task->status === TaskStatus::Completed) {
+                $task->completed_at = now();
+                $task->save();
+            }
+
+            return $task;
+        });
 
         return ApiResponse::success(
-            new TaskResource($task->fresh('assignee')),
+            new TaskResource($task->fresh('assignees')),
             'Task created successfully.',
             201,
         );

@@ -10,7 +10,8 @@ erDiagram
     USERS ||--o{ LIST_MEMBERS : joins
     TASK_LISTS ||--o{ LIST_MEMBERS : includes
     TASK_LISTS ||--o{ TASKS : contains
-    USERS o|--o{ TASKS : assigned
+    TASKS ||--o{ TASK_ASSIGNEES : assigns
+    USERS ||--o{ TASK_ASSIGNEES : takes
 
     USERS {
         bigint id PK
@@ -43,10 +44,16 @@ erDiagram
         text description
         string priority
         string status
-        bigint assignee_id FK
         date start_date
         date due_date
         timestamp completed_at
+        timestamp created_at
+        timestamp updated_at
+    }
+    TASK_ASSIGNEES {
+        bigint id PK
+        bigint task_id FK
+        bigint user_id FK
         timestamp created_at
         timestamp updated_at
     }
@@ -70,7 +77,11 @@ Owners are not inserted into this table. Application logic treats `task_lists.ow
 
 ### `tasks`
 
-Tasks belong to a list and cascade when the list is deleted. `priority` defaults to `MEDIUM`. `assignee_id` is optional and becomes null if that user is deleted. Indexes support list/status, list/priority, assignee/status, and due-date queries. Application validation must ensure an assignee is the owner or a current list member.
+Tasks belong to a list and cascade when the list is deleted. `priority` defaults to `MEDIUM`. Tasks carry no assignee column; assignment is stored in the `task_assignees` pivot. Indexes support list/status, list/priority, and due-date queries.
+
+### `task_assignees`
+
+A task can be assigned to more than one participant. The composite unique `(task_id, user_id)` prevents duplicate assignment rows. Deleting a task or a user cascades its pivot rows. Application validation must ensure every assignee is the list owner or a current active member, and Form Requests reject duplicate ids in one request.
 
 ## Enumerated contracts
 
@@ -89,8 +100,9 @@ String columns keep status evolution migration-friendly; Form Requests and enums
 | --- | --- |
 | User owning lists | Restricted |
 | User membership rows | Cascade |
-| User task assignments | Set null |
+| User task assignments | Cascade (pivot rows removed) |
 | Task list memberships | Cascade |
 | Task list tasks | Cascade |
+| Task assignments (task deleted) | Cascade |
 
 Hard user deletion is not an ordinary product action. Disable accounts to preserve ownership and audit context.

@@ -11,6 +11,7 @@ use App\Support\ApiResponse;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class TaskController extends Controller
 {
@@ -20,7 +21,7 @@ class TaskController extends Controller
     {
         $this->authorize('view', $task);
 
-        return ApiResponse::success(new TaskResource($task->load('assignee')));
+        return ApiResponse::success(new TaskResource($task->load('assignees')));
     }
 
     public function update(UpdateTaskRequest $request, Task $task): JsonResponse
@@ -29,18 +30,24 @@ class TaskController extends Controller
 
         $data = $request->validated();
 
-        $task->fill($data);
+        DB::transaction(function () use ($task, $data): void {
+            $task->fill($data);
 
-        if (array_key_exists('status', $data)) {
-            $task->completed_at = $task->status === TaskStatus::Completed
-                ? ($task->completed_at ?? now())
-                : null;
-        }
+            if (array_key_exists('status', $data)) {
+                $task->completed_at = $task->status === TaskStatus::Completed
+                    ? ($task->completed_at ?? now())
+                    : null;
+            }
 
-        $task->save();
+            $task->save();
+
+            if (array_key_exists('assignee_ids', $data)) {
+                $task->syncAssignees($data['assignee_ids']);
+            }
+        });
 
         return ApiResponse::success(
-            new TaskResource($task->fresh('assignee')),
+            new TaskResource($task->fresh('assignees')),
             'Task updated successfully.',
         );
     }

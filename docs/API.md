@@ -91,13 +91,13 @@ Adding the owner as a pivot member and duplicate membership are rejected with `4
 | Method | Endpoint | Authorization | Expected input |
 | --- | --- | --- | --- |
 | `GET` | `/api/lists/{list}/tasks` | Owner or member | Optional `priority`, `status` filters; optional `sort` (`priority`, `due_date`) and `direction` (`asc`, `desc`) |
-| `POST` | `/api/lists/{list}/tasks` | Owner or member | `title`; optional description/priority/status/assignee/dates |
+| `POST` | `/api/lists/{list}/tasks` | Owner or member | `title`; optional description/priority/status/`assignee_ids`/dates |
 | `GET` | `/api/tasks/{task}` | Participant in task’s list | None |
 | `PATCH` | `/api/tasks/{task}` | Participant in task’s list | Editable task fields |
 | `DELETE` | `/api/tasks/{task}` | Participant in task’s list | None |
 | `GET` | `/api/lists/{list}/progress` | Owner or member | None |
 
-Priority accepts `LOW`, `MEDIUM`, or `HIGH` and defaults to `MEDIUM`. Status accepts `TODO`, `IN_PROGRESS`, or `COMPLETED` and defaults to `TODO`. Assignment must be null, the list owner, or a current member. Setting status to `COMPLETED` sets `completed_at`; moving away from completion clears it. Date validation rejects a due date earlier than the start date. The progress endpoint returns `{ "total": int, "completed": int, "percent": int }` and reports `0` percent for lists without tasks.
+Priority accepts `LOW`, `MEDIUM`, or `HIGH` and defaults to `MEDIUM`. Status accepts `TODO`, `IN_PROGRESS`, or `COMPLETED` and defaults to `TODO`. Assignment is optional and multi-valued: send `assignee_ids` as an array of user ids; every assignee must be the list owner or a current member, duplicates are rejected with `422`, and sending the key replaces the full assignment set (an empty array unassigns everyone; omitting the key on `PATCH` keeps existing assignments). Task responses expose `assignee_ids` (list of user ids) and `assignees` (list of user objects). Removing a member clears their assignments within that list in a transaction. Setting status to `COMPLETED` sets `completed_at`; moving away from completion clears it. Date validation rejects a due date earlier than the start date. The progress endpoint returns `{ "total": int, "completed": int, "percent": int }` and reports `0` percent for lists without tasks.
 
 ## Implemented administrator endpoints
 
