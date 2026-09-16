@@ -43,21 +43,18 @@ class TaskListTaskController extends Controller
         $this->authorize('create', [Task::class, $list]);
 
         $data = $request->validated();
+        $status = isset($data['status']) ? TaskStatus::from($data['status']) : TaskStatus::Todo;
 
         $task = $list->tasks()->create([
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'priority' => isset($data['priority']) ? TaskPriority::from($data['priority']) : TaskPriority::Medium,
-            'status' => isset($data['status']) ? TaskStatus::from($data['status']) : TaskStatus::Todo,
+            'status' => $status,
             'assignee_id' => $data['assignee_id'] ?? null,
             'start_date' => $data['start_date'] ?? null,
             'due_date' => $data['due_date'] ?? null,
+            'completed_at' => $status === TaskStatus::Completed ? now() : null,
         ]);
-
-        if ($task->status === TaskStatus::Completed) {
-            $task->completed_at = now();
-            $task->save();
-        }
 
         return ApiResponse::success(
             new TaskResource($task->fresh('assignee')),

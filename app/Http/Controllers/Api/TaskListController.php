@@ -76,10 +76,11 @@ class TaskListController extends Controller
         $this->authorize('delete', $list);
 
         DB::transaction(function () use ($list): void {
+            TaskList::query()->whereKey($list->id)->lockForUpdate()->firstOrFail();
             $list->tasks()->delete();
             $list->memberships()->delete();
             $list->delete();
-        });
+        }, 3);
 
         return ApiResponse::success(message: 'Task list deleted successfully.');
     }
@@ -107,13 +108,24 @@ class TaskListController extends Controller
             return ApiResponse::error('The owner is already an implicit list participant.', 422);
         }
 
-        if ($list->members()->whereKey($user->id)->exists()) {
+        $member = DB::transaction(function () use ($list, $user): ?User {
+            $lockedList = TaskList::query()->whereKey($list->id)->lockForUpdate()->firstOrFail();
+
+            if ($lockedList->members()->whereKey($user->id)->exists()) {
+                return null;
+            }
+
+            $lockedList->members()->attach($user->id, ['joined_at' => now()]);
+
+            return $lockedList->members()
+                ->withPivot('joined_at')
+                ->whereKey($user->id)
+                ->firstOrFail();
+        }, 3);
+
+        if ($member === null) {
             return ApiResponse::error('The user is already a member of this list.', 422);
         }
-
-        $list->members()->attach($user->id, ['joined_at' => now()]);
-
-        $member = $list->members()->withPivot('joined_at')->whereKey($user->id)->firstOrFail();
 
         return ApiResponse::success(
             new ListMemberResource($member),
@@ -126,20 +138,26 @@ class TaskListController extends Controller
     {
         $this->authorize('manageMembers', $list);
 
-        $exists = $list->members()->whereKey($member->id)->exists();
+        $removed = DB::transaction(function () use ($list, $member): bool {
+            $lockedList = TaskList::query()->whereKey($list->id)->lockForUpdate()->firstOrFail();
 
-        if (! $exists) {
-            return ApiResponse::error('The user is not a member of this list.', 404);
-        }
+            if (! $lockedList->members()->whereKey($member->id)->exists()) {
+                return false;
+            }
 
-        DB::transaction(function () use ($list, $member): void {
             Task::query()
-                ->where('task_list_id', $list->id)
+                ->where('task_list_id', $lockedList->id)
                 ->where('assignee_id', $member->id)
                 ->update(['assignee_id' => null]);
 
-            $list->members()->detach($member->id);
-        });
+            $lockedList->members()->detach($member->id);
+
+            return true;
+        }, 3);
+
+        if (! $removed) {
+            return ApiResponse::error('The user is not a member of this list.', 404);
+        }
 
         return ApiResponse::success(message: 'Member removed successfully.');
     }
